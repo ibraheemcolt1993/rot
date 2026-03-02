@@ -59,6 +59,14 @@
 
     <div class="filters">
       <div class="row">
+        <label for="term">الفصل الدراسي</label>
+        <select id="term">
+          <option value="FIRST">الفصل الدراسي الأول</option>
+          <option value="SECOND">الفصل الدراسي الثاني</option>
+        </select>
+      </div>
+
+      <div class="row">
         <label for="week">الأسبوع</label>
         <select id="week" disabled>
           <option value="">تحميل الأسابيع...</option>
@@ -98,6 +106,9 @@
 
   // ========= أقصى أسبوع بالسنة =========
   const MAX_WEEK = 25;
+  const FIRST_TERM_START_WEEK = 6;
+  const FIRST_TERM_END_WEEK = 16;
+  const SECOND_TERM_ROOT = "SECOND TERM";
 
   // ========= القوائم الثابتة =========
   const GRADES = [
@@ -122,6 +133,7 @@
 
 
   // ========= عناصر الصفحة =========
+  const termSel  = document.getElementById("term");
   const weekSel  = document.getElementById("week");
   const gradeSel = document.getElementById("grade");
   const subjSel  = document.getElementById("subject");
@@ -129,6 +141,19 @@
   // ========= أدوات مساعدة =========
   function setStatus(msg){
     document.getElementById("status").textContent = msg || "";
+  }
+
+
+  function getSelectedTerm(){
+    return termSel.value === "SECOND" ? "SECOND" : "FIRST";
+  }
+
+  function isSecondTerm(){
+    return getSelectedTerm() === "SECOND";
+  }
+
+  function weekPathForSelectedTerm(weekId){
+    return isSecondTerm() ? `${SECOND_TERM_ROOT}/${weekId}` : weekId;
   }
 
   function encodeBlobPath(path){
@@ -217,15 +242,29 @@
     return all;
   }
 
-  // ========= تحميل الأسابيع تلقائياً =========
-  async function loadWeeksFromStorage(){
-    // نقرأ كل blobs اللي بتبدأ بـ Weak
-    const all = await listAllBlobs("Weak");
+  // ========= تحميل الأسابيع =========
+  function buildFirstTermWeeks(){
+    const out = [];
+    for(let n = FIRST_TERM_START_WEEK; n <= FIRST_TERM_END_WEEK; n++){
+      out.push("Weak" + String(n).padStart(2, "0"));
+    }
+    return out;
+  }
 
+  async function loadWeeksFromStorage(){
+    if(!isSecondTerm()){
+      return buildFirstTermWeeks();
+    }
+
+    const all = await listAllBlobs(`${SECOND_TERM_ROOT}/Weak`);
     const set = new Set();
+
     for(const x of all){
-      const first = (x.blobName || "").split("/")[0]; // Weak11 مثلاً
-      const m = first.match(/^Weak(\d{1,2})$/i);
+      const parts = (x.blobName || "").split("/");
+      if((parts[0] || "").toUpperCase() !== SECOND_TERM_ROOT.toUpperCase()) continue;
+
+      const weekPart = parts[1] || "";
+      const m = weekPart.match(/^Weak(\d{1,2})$/i);
       if(!m) continue;
 
       const n = parseInt(m[1], 10);
@@ -301,6 +340,43 @@
   }
 
   // ========= أحداث القوائم =========
+  termSel.addEventListener("change", async ()=>{
+    resetFiles();
+    resetGrade();
+    resetSubject();
+
+    weekSel.disabled = true;
+    weekSel.innerHTML = `<option value="">تحميل الأسابيع...</option>`;
+
+    setStatus("تحميل قائمة الأسابيع...");
+    try{
+      const weeks = await loadWeeksFromStorage();
+      weekSel.innerHTML = `<option value="">اختر الأسبوع</option>`;
+
+      for(const id of weeks){
+        const opt = document.createElement("option");
+        opt.value = id;
+        opt.textContent = weekLabelFromId(id);
+        weekSel.appendChild(opt);
+      }
+
+      if(isSecondTerm() && weeks.length === 0){
+        setStatus("لا توجد أسابيع حالياً في الفصل الدراسي الثاني.");
+      }else{
+        setStatus("");
+      }
+
+      weekSel.disabled = false;
+    }catch(e){
+      const msg = (e.message || "").includes("LIST_HTTP_403")
+        ? "فشل تحميل الأسابيع: 403 (صلاحية SAS غير كافية)"
+        : ("حصل خطأ أثناء تحميل الأسابيع: " + (e.message || e));
+      setStatus(msg);
+      weekSel.innerHTML = `<option value="">اختر الأسبوع</option>`;
+      weekSel.disabled = false;
+    }
+  });
+
   weekSel.addEventListener("change", ()=>{
     resetFiles();
     resetSubject();
@@ -329,7 +405,7 @@
 
   if(!week || !grade || !subj) return;
 
-  const prefix = `${week}/${grade}/`;
+  const prefix = `${weekPathForSelectedTerm(week)}/${grade}/`;
 
   setStatus("تحميل الملفات...");
 
@@ -343,7 +419,7 @@
       }
 
       const fileName = `W${n} Plan.pdf`;             // مثال: W3 Plan.pdf
-      const blobName = `${prefix}${fileName}`;       // Weak03/G7/W3 Plan.pdf
+      const blobName = `${prefix}${fileName}`;
 
       // نتأكد هل الملف موجود عبر list على نفس الـ prefix
       const all = await listAllBlobs(prefix);
@@ -410,7 +486,8 @@
       weekSel.innerHTML = `<option value="">اختر الأسبوع</option>`;
 
       if(!weeks.length){
-        setStatus("ما لقيت ولا أسبوع (Weakxx) داخل التخزين.");
+        if(isSecondTerm()) setStatus("لا توجد أسابيع حالياً في الفصل الدراسي الثاني.");
+        else setStatus("لا توجد أسابيع حالياً في الفصل الدراسي الأول.");
         weekSel.disabled = false;
         return;
       }
