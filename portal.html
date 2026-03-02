@@ -6,7 +6,6 @@
   <title>لوحة إدارة روتينات التعلم</title>
   <link rel="stylesheet" href="vendor/tabler/tabler.min.css" />
   <link rel="stylesheet" href="rtl.css" />
-  <link rel="stylesheet" href="styles.css" />
 
 </head>
 
@@ -20,7 +19,7 @@
         <input id="pw" type="password" placeholder="اكتب كلمة السر..." autocomplete="off" />
       </div>
       <div class="btns" style="margin-top:12px">
-        <button class="btn primary" id="btnLogin">دخول</button>
+        <button class="btn btn-primary" id="btnLogin">دخول</button>
       </div>
       <div class="lockHint">ملاحظة: لا تشارك الرابط إلا مع المشرف.</div>
     </div>
@@ -35,7 +34,7 @@
     <div class="filters">
       <div class="row">
         <label for="term">الفصل الدراسي</label>
-        <select id="term">
+        <select id="term" class="form-select">
           <option value="FIRST">الفصل الدراسي الأول</option>
           <option value="SECOND">الفصل الدراسي الثاني</option>
         </select>
@@ -43,7 +42,7 @@
 
       <div class="row">
         <label for="week">الأسبوع</label>
-        <select id="week" disabled>
+        <select id="week" class="form-select" disabled>
           <option value="">تحميل الأسابيع...</option>
         </select>
       </div>
@@ -67,14 +66,14 @@
 
       <div class="row">
         <label for="grade">الصف</label>
-        <select id="grade" disabled>
+        <select id="grade" class="form-select" disabled>
           <option value="">اختر الصف</option>
         </select>
       </div>
 
       <div class="row">
         <label for="subject">المادة</label>
-        <select id="subject" disabled>
+        <select id="subject" class="form-select" disabled>
           <option value="">اختر المادة</option>
         </select>
       </div>
@@ -124,7 +123,7 @@
       </div>
 
       <div class="btns">
-        <button class="btn primary" id="btnAddFile">إضافة ملف</button>
+        <button class="btn btn-primary" id="btnAddFile">إضافة ملف</button>
       </div>
 
       <div class="meta" id="addMeta">اختَر (أسبوع/صف/مادة) أولًا.</div>
@@ -448,7 +447,7 @@ const SAS_AND_ADMIN = SAS_Q_ADMIN.replace("?", "&");
         <div class="btns">
           <a class="btn" href="${url}" target="_blank" rel="noopener">تنزيل</a>
           <button class="btn danger" data-del="${encodeURIComponent(f.blobName)}">حذف</button>
-          <label class="btn primary" for="${replaceId}">استبدال</label>
+          <label class="btn btn-primary" for="${replaceId}">استبدال</label>
           <input id="${replaceId}" type="file" class="hide" data-rep="${encodeURIComponent(f.blobName)}" />
         </div>
         <div class="meta">آخر تعديل: ${f.last ? new Date(f.last).toLocaleString("ar") : "-"}</div>
