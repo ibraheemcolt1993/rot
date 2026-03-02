@@ -4,88 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>لوحة إدارة روتينات التعلم</title>
-  <style>
-    :root{ --bg:#f6f7fb; --card:#fff; --bd:#eee; --sh:0 8px 25px rgba(0,0,0,.08); }
-    body{font-family:system-ui,Tahoma,Arial; background:var(--bg); margin:0; padding:16px;}
-    .box{max-width:1080px; margin:auto; background:var(--card); border-radius:16px; padding:16px; box-shadow:var(--sh);}
-    h1{margin:0 0 14px; text-align:center; font-size:20px;}
+    <link rel="stylesheet" href="styles.css" />
 
-    .filters{display:flex; flex-direction:column; gap:10px; margin-top:10px;}
-    .row{display:flex; flex-direction:column; gap:6px;}
-    label{font-size:13px; color:#444;}
-    select,input[type="number"],input[type="text"],input[type="file"],input[type="password"]{
-      width:100%;
-      padding:12px 10px;
-      border-radius:12px;
-      border:1px solid #ddd;
-      background:#fff;
-      font-size:16px;
-      outline:none;
-      box-sizing:border-box;
-    }
-
-    .hint{margin-top:8px; font-size:12px; color:#777; text-align:center;}
-    .status{margin-top:12px; font-size:13px; color:#555; text-align:center;}
-
-    .grid{
-      display:grid;
-      grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
-      gap:12px;
-      margin-top:14px;
-    }
-    .card{
-      background:#fff;
-      border:1px solid var(--bd);
-      border-radius:16px;
-      padding:12px;
-      box-shadow:0 6px 18px rgba(0,0,0,.05);
-    }
-    .name{font-weight:800; font-size:14px; margin:0 0 8px; word-break:break-word;}
-    .meta{font-size:12px; color:#777; margin-top:10px;}
-
-    .btns{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
-    .btn{
-      flex:1;
-      min-width:90px;
-      text-align:center;
-      text-decoration:none;
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid #ddd;
-      font-size:14px;
-      background:#fafafa;
-      color:#111;
-      cursor:pointer;
-      user-select:none;
-    }
-    .btn.primary{background:#e8f0ff; border-color:#cfe0ff;}
-    .btn.danger{background:#ffecec; border-color:#ffd0d0;}
-    .btn.ok{background:#ecfff1; border-color:#c9f5d4;}
-
-    .sectionTitle{
-      font-weight:900;
-      font-size:14px;
-      margin:14px 0 8px;
-      color:#222;
-      text-align:center;
-    }
-
-    /* شاشة كلمة السر */
-    .lock{
-      position:fixed; inset:0; background:rgba(0,0,0,.35);
-      display:flex; align-items:center; justify-content:center;
-      padding:18px;
-    }
-    .lockCard{
-      width:min(420px, 100%);
-      background:#fff; border-radius:16px; box-shadow:var(--sh);
-      padding:16px; border:1px solid #eee;
-    }
-    .lockTitle{font-weight:800; margin:0 0 10px; font-size:16px; text-align:center;}
-    .lockHint{font-size:12px; color:#666; text-align:center; margin-top:8px;}
-
-    .hide{display:none !important;}
-  </style>
 </head>
 
 <body>
@@ -108,6 +28,14 @@
     <h1>لوحة إدارة روتينات التعلم</h1>
 
     <div class="filters">
+      <div class="row">
+        <label for="term">الفصل الدراسي</label>
+        <select id="term">
+          <option value="FIRST">الفصل الدراسي الأول</option>
+          <option value="SECOND">الفصل الدراسي الثاني</option>
+        </select>
+      </div>
+
       <div class="row">
         <label for="week">الأسبوع</label>
         <select id="week" disabled>
@@ -148,18 +76,23 @@
     </div>
 
     <div class="hint" id="hint">
-      اختَر الأسبوع ثم الصف ثم المادة لعرض الملفات. (الخطة تظهر فقط إذا كانت موجودة، وإلا ستجد زر “إضافة خطة الأسبوع”)
+      اختَر الأسبوع ثم الصف ثم المادة لعرض الملفات. (يمكنك رفع مجلد الخطط للأسبوع المختار؛ وسيتم توزيعها تلقائياً على الصفوف)
     </div>
 
     <div class="status" id="status"></div>
 
-    <!-- زر إضافة خطة الأسبوع عند عدم وجودها -->
+    <!-- رفع خطط الصفوف دفعة واحدة -->
     <div class="card hide" id="addPlanCard">
-      <div class="name">خطة الأسبوع غير موجودة</div>
-      <div class="btns">
-        <button class="btn ok" id="btnOpenAddPlan">إضافة خطة الأسبوع</button>
+      <div class="name">رفع خطط الصفوف (مجلد كامل)</div>
+      <div class="row">
+        <label for="planFolder">اختر مجلد خطط الأسبوع (9 ملفات)</label>
+        <input id="planFolder" type="file" webkitdirectory directory multiple />
+        <div class="hint">سيتم استنتاج الصف من اسم الملف (مثل: الصف الأول/1 ... الصف التاسع/9)، ثم إعادة التسمية تلقائيًا إلى Wn Plan.pdf.</div>
       </div>
-      <div class="meta" id="planMeta">سيتم حفظها باسم: Wn Plan.pdf داخل مسار الأسبوع/الصف.</div>
+      <div class="btns">
+        <button class="btn ok" id="btnUploadPlanFolder">رفع مجلد الخطط</button>
+      </div>
+      <div class="meta" id="planMeta">اختر الفصل والأسبوع، ثم ارفع مجلد الخطط.</div>
     </div>
 
     <!-- قائمة الملفات -->
@@ -211,6 +144,9 @@
 const SAS_AND_ADMIN = SAS_Q_ADMIN.replace("?", "&");
 
   const MAX_WEEK = 25;
+  const FIRST_TERM_START_WEEK = 6;
+  const FIRST_TERM_END_WEEK = 16;
+  const SECOND_TERM_ROOT = "SECOND TERM";
 
   const GRADES = [
     { id:"G1", label:"الصف الأول" },
@@ -233,13 +169,15 @@ const SAS_AND_ADMIN = SAS_Q_ADMIN.replace("?", "&");
   ];
 
   // ========= عناصر =========
+  const termSel  = document.getElementById("term");
   const weekSel  = document.getElementById("week");
   const gradeSel = document.getElementById("grade");
   const subjSel  = document.getElementById("subject");
   const filesGrid = document.getElementById("files");
 
   const addPlanCard = document.getElementById("addPlanCard");
-  const btnOpenAddPlan = document.getElementById("btnOpenAddPlan");
+  const planFolder = document.getElementById("planFolder");
+  const btnUploadPlanFolder = document.getElementById("btnUploadPlanFolder");
   const planMeta = document.getElementById("planMeta");
 
   const uploadWeekCard = document.getElementById("uploadWeekCard");
@@ -257,6 +195,18 @@ const SAS_AND_ADMIN = SAS_Q_ADMIN.replace("?", "&");
   const addMeta = document.getElementById("addMeta");
 
   function setStatus(msg){ document.getElementById("status").textContent = msg || ""; }
+
+  function getSelectedTerm(){
+    return termSel.value === "SECOND" ? "SECOND" : "FIRST";
+  }
+
+  function isSecondTerm(){
+    return getSelectedTerm() === "SECOND";
+  }
+
+  function weekPathForSelectedTerm(weekId){
+    return isSecondTerm() ? `${SECOND_TERM_ROOT}/${weekId}` : weekId;
+  }
 
   function encodeBlobPath(path){
     return path.split("/").map(seg => encodeURIComponent(seg)).join("/");
@@ -355,6 +305,76 @@ const SAS_AND_ADMIN = SAS_Q_ADMIN.replace("?", "&");
   async function uploadReplace(blobName, file){
     await deleteBlob(blobName);
     await uploadBlob(blobName, file);
+  }
+
+  function normalizeArabicDigits(text){
+    const map = {"٠":"0","١":"1","٢":"2","٣":"3","٤":"4","٥":"5","٦":"6","٧":"7","٨":"8","٩":"9"};
+    return (text || "").replace(/[٠-٩]/g, d => map[d] || d);
+  }
+
+  function gradeFromToken(token){
+    const t = (token || "").toLowerCase().trim();
+    const defs = [
+      { grade:"G1", re:/^(1|الأول|الاول|اول|الأولى|الاولى)$/i },
+      { grade:"G2", re:/^(2|الثاني|الثانى)$/i },
+      { grade:"G3", re:/^(3|الثالث)$/i },
+      { grade:"G4", re:/^(4|الرابع)$/i },
+      { grade:"G5", re:/^(5|الخامس)$/i },
+      { grade:"G6", re:/^(6|السادس)$/i },
+      { grade:"G7", re:/^(7|السابع)$/i },
+      { grade:"G8", re:/^(8|الثامن)$/i },
+      { grade:"G9", re:/^(9|التاسع)$/i },
+    ];
+    const hit = defs.find(x => x.re.test(t));
+    return hit ? hit.grade : null;
+  }
+
+  function detectGradeIdFromPlanFileName(fileName){
+    const base = normalizeArabicDigits((fileName || "").replace(/\.[^.]+$/, ""));
+
+    const m = base.match(/(?:للصف|الصف)\s*([؀-ۿ0-9]+)/i);
+    if(m){
+      const g = gradeFromToken(m[1]);
+      if(g) return g;
+    }
+
+    const fallback = base.match(/(?:^|[\s_-])(1|2|3|4|5|6|7|8|9)(?:$|[\s_-])/);
+    if(fallback) return "G" + fallback[1];
+
+    return null;
+  }
+
+  async function uploadPlansFolderAll(files){
+    const week = weekSel.value;
+    if(!week || week === "__UPLOAD_WEEK__") throw new Error("اختَر الأسبوع أولاً.");
+
+    const weekNum = weekNumFromId(week);
+    if(!weekNum) throw new Error("اسم الأسبوع غير صحيح.");
+
+    const valid = files.filter(f => f && f.name && !f.name.startsWith("."));
+    if(valid.length !== 9) throw new Error("مجلد الخطط لازم يحتوي 9 ملفات بالضبط.");
+
+    const mapped = new Map();
+    for(const f of valid){
+      const gradeId = detectGradeIdFromPlanFileName(f.name);
+      if(!gradeId) throw new Error(`تعذر معرفة الصف من الملف: ${f.name}`);
+      if(mapped.has(gradeId)) throw new Error(`يوجد أكثر من ملف لنفس الصف (${gradeId}).`);
+      mapped.set(gradeId, f);
+    }
+
+    if(mapped.size !== 9) throw new Error("يجب أن يغطي المجلد الصفوف التسعة (G1..G9). تأكد من أسماء الملفات.");
+
+    const fileName = `W${weekNum} Plan.pdf`;
+    const weekRoot = weekPathForSelectedTerm(week);
+    const grades = ["G1","G2","G3","G4","G5","G6","G7","G8","G9"];
+
+    for(let i=0;i<grades.length;i++){
+      const gradeId = grades[i];
+      const file = mapped.get(gradeId);
+      const target = `${weekRoot}/${gradeId}/${fileName}`;
+      setStatus(`(${i+1}/9) رفع خطة ${gradeId}...`);
+      await uploadReplace(target, file);
+    }
   }
 
   // ========= تعبئة القوائم =========
@@ -485,7 +505,7 @@ const SAS_AND_ADMIN = SAS_Q_ADMIN.replace("?", "&");
 
   function buildBlobNameForNewFile(weekId, gradeId, fileName){
     // مسار ثابت داخل الأسبوع/الصف:
-    return `${weekId}/${gradeId}/${fileName}`;
+    return `${weekPathForSelectedTerm(weekId)}/${gradeId}/${fileName}`;
   }
 
   function updateAddPreview(){
@@ -526,16 +546,20 @@ const SAS_AND_ADMIN = SAS_Q_ADMIN.replace("?", "&");
   // ========= Refresh list + منطق الخطة =========
   async function refreshList(){
     filesGrid.innerHTML = "";
-    addPlanCard.classList.add("hide");
 
     const week = weekSel.value;
     const grade = gradeSel.value;
     if(!week || week === "__UPLOAD_WEEK__" || !grade) {
+      addPlanCard.classList.add("hide");
       setStatus("");
       return;
     }
 
-    const prefix = `${week}/${grade}/`;
+    const wkNum = weekNumFromId(week);
+    addPlanCard.classList.remove("hide");
+    planMeta.textContent = `ارفع 9 ملفات خطط؛ وسيتم حفظها تلقائياً باسم: W${wkNum} Plan.pdf داخل جميع الصفوف.`;
+
+    const prefix = `${weekPathForSelectedTerm(week)}/${grade}/`;
     setStatus("تحميل القائمة...");
 
     try{
@@ -548,12 +572,7 @@ const SAS_AND_ADMIN = SAS_Q_ADMIN.replace("?", "&");
       // عبّي المواد (وخطة فقط إذا موجودة)
       fillSubjects(SUBJECTS_BASE, hasPlan);
 
-      // إذا الخطة مش موجودة: اعرض زر “إضافة خطة الأسبوع”
-      if(!hasPlan){
-        addPlanCard.classList.remove("hide");
-        const n = weekNumFromId(week);
-        planMeta.textContent = `سيتم حفظها باسم: W${n} Plan.pdf`;
-      }
+      // بطاقة رفع مجلد الخطط تبقى متاحة دائماً للأسبوع المختار.
 
       // فلترة حسب المادة إن كانت مختارة
       const subj = subjSel.value;
@@ -580,18 +599,33 @@ const SAS_AND_ADMIN = SAS_Q_ADMIN.replace("?", "&");
         : ("حصل خطأ: " + (e.message || e));
       setStatus(msg);
     } finally {
+      if(week && week !== "__UPLOAD_WEEK__") addPlanCard.classList.remove("hide");
       updateAddPreview();
     }
   }
 
   // ========= تحميل الأسابيع + إضافة خيار “رفع أسبوع” =========
+  function buildFirstTermWeeks(){
+    const out = [];
+    for(let n = FIRST_TERM_START_WEEK; n <= FIRST_TERM_END_WEEK; n++){
+      out.push("Weak" + String(n).padStart(2, "0"));
+    }
+    return out;
+  }
+
   async function loadWeeksFromStorage(){
-    const all = await listAllBlobs("Weak");
+    if(!isSecondTerm()){
+      return buildFirstTermWeeks();
+    }
+
+    const all = await listAllBlobs(`${SECOND_TERM_ROOT}/Weak`);
     const set = new Set();
 
     for(const x of all){
-      const first = (x.blobName || "").split("/")[0];
-      const m = first.match(/^Weak(\d{1,2})$/i);
+      const parts = (x.blobName || "").split("/");
+      if((parts[0] || "").toUpperCase() !== SECOND_TERM_ROOT.toUpperCase()) continue;
+      const weekPart = parts[1] || "";
+      const m = weekPart.match(/^Weak(\d{1,2})$/i);
       if(!m) continue;
       const n = parseInt(m[1], 10);
       if(n >= 1 && n <= MAX_WEEK){
@@ -612,11 +646,13 @@ const SAS_AND_ADMIN = SAS_Q_ADMIN.replace("?", "&");
       weekSel.appendChild(opt);
     }
 
-    // خيار رفع أسبوع كامل
-    const addOpt = document.createElement("option");
-    addOpt.value = "__UPLOAD_WEEK__";
-    addOpt.textContent = "➕ إضافة أسبوع (رفع مجلد Weakxx)";
-    weekSel.appendChild(addOpt);
+    if(isSecondTerm()){
+      // خيار رفع أسبوع كامل (للفصل الثاني)
+      const addOpt = document.createElement("option");
+      addOpt.value = "__UPLOAD_WEEK__";
+      addOpt.textContent = "➕ إضافة أسبوع (رفع مجلد Weakxx)";
+      weekSel.appendChild(addOpt);
+    }
 
     weekSel.disabled = false;
   }
@@ -638,14 +674,45 @@ const SAS_AND_ADMIN = SAS_Q_ADMIN.replace("?", "&");
       if(!rel) continue;
       if(rel.endsWith("/")) continue;
 
-      setStatus(`(${i+1}/${files.length}) رفع: ${rel}`);
-      await uploadReplace(rel, f);
+      const targetRel = isSecondTerm() ? `${SECOND_TERM_ROOT}/${rel}` : rel;
+
+      setStatus(`(${i+1}/${files.length}) رفع: ${targetRel}`);
+      await uploadReplace(targetRel, f);
     }
 
     return top;
   }
 
   // ========= أحداث الواجهة =========
+  termSel.addEventListener("change", async ()=>{
+    setStatus("");
+    filesGrid.innerHTML = "";
+    addPlanCard.classList.add("hide");
+    uploadWeekCard.classList.add("hide");
+
+    resetGrade();
+    resetSubject();
+    weekSel.value = "";
+    weekSel.disabled = true;
+    weekSel.innerHTML = `<option value="">تحميل الأسابيع...</option>`;
+
+    try{
+      const weeks = await loadWeeksFromStorage();
+      fillWeeks(weeks);
+      if(isSecondTerm() && weeks.length === 0){
+        setStatus("لا توجد أسابيع حالياً في الفصل الدراسي الثاني.");
+      }
+    }catch(e){
+      const msg = (e.message || "").includes("LIST_HTTP_403")
+        ? "فشل تحميل الأسابيع: 403 (SAS غير كافي أو منتهي)"
+        : ("حصل خطأ أثناء تحميل الأسابيع: " + (e.message || e));
+      setStatus(msg);
+      weekSel.disabled = false;
+    }
+
+    updateAddPreview();
+  });
+
   weekSel.addEventListener("change", async ()=>{
     setStatus("");
     filesGrid.innerHTML = "";
@@ -670,13 +737,16 @@ const SAS_AND_ADMIN = SAS_Q_ADMIN.replace("?", "&");
       return;
     }
 
+    const wkNum = weekNumFromId(v);
+    addPlanCard.classList.remove("hide");
+    planMeta.textContent = `ارفع 9 ملفات خطط؛ وسيتم حفظها تلقائياً باسم: W${wkNum} Plan.pdf داخل جميع الصفوف.`;
+
     fillGrades();
     updateAddPreview();
   });
 
   gradeSel.addEventListener("change", async ()=>{
     filesGrid.innerHTML = "";
-    addPlanCard.classList.add("hide");
     resetSubject();
 
     if(!gradeSel.value){ updateAddPreview(); return; }
@@ -689,20 +759,29 @@ const SAS_AND_ADMIN = SAS_Q_ADMIN.replace("?", "&");
     await refreshList();
   });
 
-  // زر “إضافة خطة الأسبوع”
-  btnOpenAddPlan.addEventListener("click", ()=>{
-    // أضف PLAN مؤقتًا واختاره
-    const exists = [...subjSel.options].some(o=>o.value==="PLAN");
-    if(!exists){
-      const opt = document.createElement("option");
-      opt.value = "PLAN";
-      opt.textContent = "خطة الأسبوع";
-      subjSel.appendChild(opt);
+  // رفع مجلد الخطط (9 ملفات للصفوف)
+  btnUploadPlanFolder.addEventListener("click", async ()=>{
+    const week = weekSel.value;
+    if(!week || week === "__UPLOAD_WEEK__"){
+      alert("اختَر الأسبوع أولاً.");
+      return;
     }
-    subjSel.value = "PLAN";
-    updateAddPreview();
-    document.getElementById("hint").textContent = "الآن اختر ملف الخطة واضغط (إضافة ملف).";
-    window.scrollTo({top: document.body.scrollHeight, behavior:"smooth"});
+
+    const files = planFolder.files ? [...planFolder.files] : [];
+    if(!files.length){
+      alert("اختَر مجلد الخطط أولاً.");
+      return;
+    }
+
+    try{
+      setStatus("جاري رفع مجلد الخطط...");
+      await uploadPlansFolderAll(files);
+      setStatus("تم رفع كل الخطط ✅");
+      planFolder.value = "";
+      if(gradeSel.value) await refreshList();
+    }catch(e){
+      setStatus("فشل رفع مجلد الخطط: " + (e.message || e));
+    }
   });
 
   // رفع أسبوع كامل
@@ -797,7 +876,11 @@ const SAS_AND_ADMIN = SAS_Q_ADMIN.replace("?", "&");
     try{
       const weeks = await loadWeeksFromStorage();
       fillWeeks(weeks);
-      setStatus("");
+      if(isSecondTerm() && weeks.length === 0){
+        setStatus("لا توجد أسابيع حالياً في الفصل الدراسي الثاني.");
+      }else{
+        setStatus("");
+      }
     }catch(e){
       const msg = (e.message || "").includes("LIST_HTTP_403")
         ? "فشل تحميل الأسابيع: 403 (SAS غير كافي أو منتهي)"
