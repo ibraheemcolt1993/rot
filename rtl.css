@@ -1,0 +1,15 @@
+html[dir="rtl"],body{direction:rtl;text-align:right}
+label{display:block;margin-bottom:.35rem;font-weight:600}
+.hint,.status,.footer,.meta{color:#6b7280;font-size:.9rem}
+#files{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}
+#files .card{height:100%}
+.name{font-weight:700;margin-bottom:.6rem}
+.btn{text-align:center}
+.lock{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,.35)}
+.lockCard{width:min(420px,calc(100% - 2rem));background:#fff;border:1px solid #dce1e7;border-radius:14px;padding:1rem}
+.hide{display:none!important}
+.box{max-width:1100px;margin:auto}
+.filters{margin-bottom:1rem}
+.btns{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem}
+.btn.ok{background:#1f9d61;color:#fff}.btn.danger{background:#c0392b;color:#fff}
+.sectionTitle{font-weight:700;margin:1rem 0 .5rem}
