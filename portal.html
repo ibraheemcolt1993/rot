@@ -4,88 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>لوحة إدارة روتينات التعلم</title>
-  <style>
-    :root{ --bg:#f6f7fb; --card:#fff; --bd:#eee; --sh:0 8px 25px rgba(0,0,0,.08); }
-    body{font-family:system-ui,Tahoma,Arial; background:var(--bg); margin:0; padding:16px;}
-    .box{max-width:1080px; margin:auto; background:var(--card); border-radius:16px; padding:16px; box-shadow:var(--sh);}
-    h1{margin:0 0 14px; text-align:center; font-size:20px;}
+    <link rel="stylesheet" href="styles.css" />
 
-    .filters{display:flex; flex-direction:column; gap:10px; margin-top:10px;}
-    .row{display:flex; flex-direction:column; gap:6px;}
-    label{font-size:13px; color:#444;}
-    select,input[type="number"],input[type="text"],input[type="file"],input[type="password"]{
-      width:100%;
-      padding:12px 10px;
-      border-radius:12px;
-      border:1px solid #ddd;
-      background:#fff;
-      font-size:16px;
-      outline:none;
-      box-sizing:border-box;
-    }
-
-    .hint{margin-top:8px; font-size:12px; color:#777; text-align:center;}
-    .status{margin-top:12px; font-size:13px; color:#555; text-align:center;}
-
-    .grid{
-      display:grid;
-      grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
-      gap:12px;
-      margin-top:14px;
-    }
-    .card{
-      background:#fff;
-      border:1px solid var(--bd);
-      border-radius:16px;
-      padding:12px;
-      box-shadow:0 6px 18px rgba(0,0,0,.05);
-    }
-    .name{font-weight:800; font-size:14px; margin:0 0 8px; word-break:break-word;}
-    .meta{font-size:12px; color:#777; margin-top:10px;}
-
-    .btns{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
-    .btn{
-      flex:1;
-      min-width:90px;
-      text-align:center;
-      text-decoration:none;
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid #ddd;
-      font-size:14px;
-      background:#fafafa;
-      color:#111;
-      cursor:pointer;
-      user-select:none;
-    }
-    .btn.primary{background:#e8f0ff; border-color:#cfe0ff;}
-    .btn.danger{background:#ffecec; border-color:#ffd0d0;}
-    .btn.ok{background:#ecfff1; border-color:#c9f5d4;}
-
-    .sectionTitle{
-      font-weight:900;
-      font-size:14px;
-      margin:14px 0 8px;
-      color:#222;
-      text-align:center;
-    }
-
-    /* شاشة كلمة السر */
-    .lock{
-      position:fixed; inset:0; background:rgba(0,0,0,.35);
-      display:flex; align-items:center; justify-content:center;
-      padding:18px;
-    }
-    .lockCard{
-      width:min(420px, 100%);
-      background:#fff; border-radius:16px; box-shadow:var(--sh);
-      padding:16px; border:1px solid #eee;
-    }
-    .lockTitle{font-weight:800; margin:0 0 10px; font-size:16px; text-align:center;}
-    .lockHint{font-size:12px; color:#666; text-align:center; margin-top:8px;}
-
-    .hide{display:none !important;}
-  </style>
 </head>
 
 <body>
