@@ -4,11 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>لوحة إدارة روتينات التعلم</title>
-    <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="vendor/tabler/tabler.min.css" />
+  <link rel="stylesheet" href="rtl.css" />
+  <link rel="stylesheet" href="styles.css" />
 
 </head>
 
-<body>
+<body class="theme-light">
   <!-- شاشة كلمة السر -->
   <div class="lock" id="lock">
     <div class="lockCard">
@@ -24,7 +26,10 @@
     </div>
   </div>
 
-  <div class="box" id="app" style="display:none">
+  <div class="container-xl py-4" id="app" style="display:none">
+    <div class="card shadow-sm">
+      <div class="card-body">
+  <div class="box">
     <h1>لوحة إدارة روتينات التعلم</h1>
 
     <div class="filters">
@@ -129,7 +134,11 @@
       تنبيه: الحذف فوري — انتبه قبل ما تضغط.
     </div>
   </div>
+      </div>
+    </div>
+  </div>
 
+<script src="vendor/tabler/tabler.min.js"></script>
 <script>
   // ========= كلمة السر =========
   const ADMIN_PASSWORD = "20252026";
