@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>روتينات التعلم</title>
+  <style>
+    :root{ --bg:#f6f7fb; --card:#fff; --bd:#eee; --sh:0 8px 25px rgba(0,0,0,.08); }
+    body{font-family:system-ui,Tahoma,Arial; background:var(--bg); margin:0; padding:16px;}
+    .box{max-width:980px; margin:auto; background:var(--card); border-radius:16px; padding:16px; box-shadow:var(--sh);}
+    h1{margin:0 0 14px; text-align:center; font-size:22px;}
+    .filters{display:flex; flex-direction:column; gap:10px; margin-top:10px;}
+    .row{display:flex; flex-direction:column; gap:6px;}
+    label{font-size:13px; color:#444;}
+    select{
+      width:100%;
+      padding:12px 10px;
+      border-radius:12px;
+      border:1px solid #ddd;
+      background:#fff;
+      font-size:16px;
+      outline:none;
+    }
+    .hint{margin-top:8px; font-size:12px; color:#777; text-align:center;}
+    .status{margin-top:12px; font-size:13px; color:#555; text-align:center;}
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+      gap:12px;
+      margin-top:14px;
+    }
+    .card{
+      background:#fff;
+      border:1px solid var(--bd);
+      border-radius:16px;
+      padding:12px;
+      box-shadow:0 6px 18px rgba(0,0,0,.05);
+    }
+    .name{font-weight:800; font-size:16px; margin:0 0 10px;}
+    .meta{font-size:12px; color:#777; margin-top:10px;}
+    .btn{
+      display:block;
+      text-align:center;
+      text-decoration:none;
+      padding:12px;
+      border-radius:12px;
+      border:1px solid #ddd;
+      font-size:16px;
+      background:#fafafa;
+      color:#111;
+    }
+    .footer{margin-top:14px; font-size:12px; color:#888; text-align:center;}
+  </style>
+</head>
+
+<body>
+  <div class="box">
+    <h1>روتينات التعلم</h1>
+
+    <div class="filters">
+      <div class="row">
+        <label for="week">الأسبوع</label>
+        <select id="week" disabled>
+          <option value="">تحميل الأسابيع...</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <label for="grade">الصف</label>
+        <select id="grade" disabled>
+          <option value="">اختر الصف</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <label for="subject">المادة</label>
+        <select id="subject" disabled>
+          <option value="">اختر المادة</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="hint" id="hint">اختر الأسبوع ثم الصف ثم المادة لعرض الملفات.</div>
+    <div class="status" id="status"></div>
+    <div class="grid" id="files"></div>
+
+    <div class="footer">تنزيل الملفات يتم مباشرة بدون عرض داخل الصفحة.</div>
+  </div>
+
+<script>
+  // ========= إعدادات Azure =========
+  const ACCOUNT_NAME = "rotstorage123";
+  const CONTAINER = "rot";
+
+  // ✅ ضع SAS الخاص بالـ container هنا (يبدأ بـ ?sp=rl... )
+  const SAS_Q = `?sp=rl&st=2025-12-26T07:37:25Z&se=2027-02-01T15:52:25Z&sv=2024-11-04&sr=c&sig=MOlzNQaFznM3Wa1%2FDDKZe7%2BCWPTbDydOhm1OzQk%2FHAI%3D`;
+  const SAS_AND = SAS_Q.replace("?", "&"); // للـ list
+
+  // ========= أقصى أسبوع بالسنة =========
+  const MAX_WEEK = 25;
+
+  // ========= القوائم الثابتة =========
+  const GRADES = [
+    { id:"G1", label:"الصف الأول" },
+    { id:"G2", label:"الصف الثاني" },
+    { id:"G3", label:"الصف الثالث" },
+    { id:"G4", label:"الصف الرابع" },
+    { id:"G5", label:"الصف الخامس" },
+    { id:"G6", label:"الصف السادس" },
+    { id:"G7", label:"الصف السابع" },
+    { id:"G8", label:"الصف الثامن" },
+    { id:"G9", label:"الصف التاسع" },
+  ];
+
+  const SUBJECTS = [
+  { id:"Arabic",  label:"لغة عربية" },
+  { id:"MATH",    label:"رياضيات" },
+  { id:"Science", label:"علوم" },
+  { id:"English", label:"إنجليزي" },
+  { id:"PLAN",    label:"خطة الأسبوع" }, // ✅ جديد
+];
+
+
+  // ========= عناصر الصفحة =========
+  const weekSel  = document.getElementById("week");
+  const gradeSel = document.getElementById("grade");
+  const subjSel  = document.getElementById("subject");
+
+  // ========= أدوات مساعدة =========
+  function setStatus(msg){
+    document.getElementById("status").textContent = msg || "";
+  }
+
+  function encodeBlobPath(path){
+    return path.split("/").map(seg => encodeURIComponent(seg)).join("/");
+  }
+
+  function extractSessionNum(fileName){
+    const m = fileName.match(/(?:^|[\s_-])L(\d+)(?:[\s_.-]|$)/i) || fileName.match(/L(\d+)/i);
+    return m ? parseInt(m[1],10) : null;
+  }
+
+  function toArabicOrdinal(n){
+    const map = {
+      1:"الأول", 2:"الثاني", 3:"الثالث", 4:"الرابع", 5:"الخامس",
+      6:"السادس", 7:"السابع", 8:"الثامن", 9:"التاسع", 10:"العاشر",
+      11:"الحادي عشر", 12:"الثاني عشر", 13:"الثالث عشر", 14:"الرابع عشر", 15:"الخامس عشر",
+      16:"السادس عشر", 17:"السابع عشر", 18:"الثامن عشر", 19:"التاسع عشر", 20:"العشرون",
+      21:"الحادي والعشرون", 22:"الثاني والعشرون", 23:"الثالث والعشرون", 24:"الرابع والعشرون", 25:"الخامس والعشرون"
+    };
+    return map[n] || ("" + n);
+  }
+
+  function weekLabelFromId(weekId){
+    const m = weekId.match(/^Weak(\d{2})$/i);
+    if(!m) return weekId;
+    const n = parseInt(m[1], 10);
+    return "الأسبوع " + toArabicOrdinal(n);
+  }
+	function weekNumFromId(weekId){
+  const m = (weekId || "").match(/^Weak(\d{2})$/i);
+  return m ? parseInt(m[1],10) : null;
+}
+
+  function toArabicOrdinalForSession(n){
+    const map = {
+      1:"الأولى",2:"الثانية",3:"الثالثة",4:"الرابعة",5:"الخامسة",
+      6:"السادسة",7:"السابعة",8:"الثامنة",9:"التاسعة",10:"العاشرة",
+      11:"الحادية عشرة",12:"الثانية عشرة",13:"الثالثة عشرة",14:"الرابعة عشرة",15:"الخامسة عشرة",
+      16:"السادسة عشرة",17:"السابعة عشرة",18:"الثامنة عشرة",19:"التاسعة عشرة",20:"العشرون",
+      21:"الحادية والعشرون",22:"الثانية والعشرون",23:"الثالثة والعشرون",24:"الرابعة والعشرون",25:"الخامسة والعشرون"
+    };
+    return map[n] || ("رقم " + n);
+  }
+
+  function fileHasSubject(fileName, subjectId){
+    const low = (fileName || "").toLowerCase();
+    if(subjectId.toLowerCase() === "math") return low.includes("math") || low.includes("mat");
+    return low.includes(subjectId.toLowerCase());
+  }
+
+  // ========= Azure LIST (يدعم NextMarker) =========
+  async function listBlobsPaged(prefix, marker){
+    const listUrl =
+      `https://${ACCOUNT_NAME}.blob.core.windows.net/${CONTAINER}` +
+      `?restype=container&comp=list` +
+      (prefix ? `&prefix=${encodeURIComponent(prefix)}` : "") +
+      (marker ? `&marker=${encodeURIComponent(marker)}` : "") +
+      `${SAS_AND}`;
+
+    const r = await fetch(listUrl);
+    if(!r.ok) throw new Error("LIST_HTTP_" + r.status);
+
+    const xmlText = await r.text();
+    const doc = new DOMParser().parseFromString(xmlText, "application/xml");
+
+    const blobs = [...doc.getElementsByTagName("Blob")];
+    const items = blobs.map(b=>{
+      const name = b.getElementsByTagName("Name")[0]?.textContent || "";
+      const last = b.getElementsByTagName("Last-Modified")[0]?.textContent || "";
+      const fileName = name.split("/").pop();
+      return { blobName:name, fileName, last, sessionNum: extractSessionNum(fileName) };
+    }).filter(x => x.fileName);
+
+    const nextMarker = doc.getElementsByTagName("NextMarker")[0]?.textContent || "";
+    return { items, nextMarker: nextMarker || null };
+  }
+
+  async function listAllBlobs(prefix){
+    let marker = null;
+    const all = [];
+    do{
+      const { items, nextMarker } = await listBlobsPaged(prefix, marker);
+      all.push(...items);
+      marker = nextMarker;
+    }while(marker);
+    return all;
+  }
+
+  // ========= تحميل الأسابيع تلقائياً =========
+  async function loadWeeksFromStorage(){
+    // نقرأ كل blobs اللي بتبدأ بـ Weak
+    const all = await listAllBlobs("Weak");
+
+    const set = new Set();
+    for(const x of all){
+      const first = (x.blobName || "").split("/")[0]; // Weak11 مثلاً
+      const m = first.match(/^Weak(\d{1,2})$/i);
+      if(!m) continue;
+
+      const n = parseInt(m[1], 10);
+      if(n >= 1 && n <= MAX_WEEK){
+        const id = "Weak" + String(n).padStart(2, "0");
+        set.add(id);
+      }
+    }
+
+    return [...set].sort((a,b)=> parseInt(a.slice(4),10) - parseInt(b.slice(4),10));
+  }
+
+  // ========= تعبئة القوائم =========
+  function resetGrade(){
+    gradeSel.innerHTML = `<option value="">اختر الصف</option>`;
+    gradeSel.disabled = true;
+  }
+
+  function resetSubject(){
+    subjSel.innerHTML = `<option value="">اختر المادة</option>`;
+    subjSel.disabled = true;
+  }
+
+  function resetFiles(){
+    document.getElementById("files").innerHTML = "";
+    setStatus("");
+  }
+
+  function fillGrades(){
+    resetGrade();
+    for(const g of GRADES){
+      const opt = document.createElement("option");
+      opt.value = g.id;
+      opt.textContent = g.label;
+      gradeSel.appendChild(opt);
+    }
+    gradeSel.disabled = false;
+  }
+
+  function fillSubjects(){
+    resetSubject();
+    for(const s of SUBJECTS){
+      const opt = document.createElement("option");
+      opt.value = s.id;
+      opt.textContent = s.label;
+      subjSel.appendChild(opt);
+    }
+    subjSel.disabled = false;
+  }
+
+  function renderFiles(items){
+    const grid = document.getElementById("files");
+    grid.innerHTML = "";
+
+    for(const f of items){
+      const title = f.isPlan
+  ? "خطة الأسبوع"
+  : (f.sessionNum ? ("الجلسة " + toArabicOrdinalForSession(f.sessionNum)) : "ملف");
+      const downloadUrl =
+        `https://${ACCOUNT_NAME}.blob.core.windows.net/${CONTAINER}/` +
+        `${encodeBlobPath(f.blobName)}` +
+        `${SAS_Q}`;
+
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="name">${title}</div>
+        <a class="btn" href="${downloadUrl}" download>تنزيل الملف</a>
+        <div class="meta">آخر تعديل: ${f.last ? new Date(f.last).toLocaleString("ar") : "-"}</div>
+      `;
+      grid.appendChild(card);
+    }
+  }
+
+  // ========= أحداث القوائم =========
+  weekSel.addEventListener("change", ()=>{
+    resetFiles();
+    resetSubject();
+
+    if(!weekSel.value){
+      resetGrade();
+      return;
+    }
+    fillGrades();
+  });
+
+  gradeSel.addEventListener("change", ()=>{
+    resetFiles();
+    if(!gradeSel.value){
+      resetSubject();
+      return;
+    }
+    fillSubjects();
+  });
+
+  subjSel.addEventListener("change", async ()=>{
+  resetFiles();
+  const week = weekSel.value;
+  const grade = gradeSel.value;
+  const subj = subjSel.value;
+
+  if(!week || !grade || !subj) return;
+
+  const prefix = `${week}/${grade}/`;
+
+  setStatus("تحميل الملفات...");
+
+  try{
+    // ✅ حالة "خطة الأسبوع"
+    if(subj === "PLAN"){
+      const n = weekNumFromId(week);
+      if(!n){
+        setStatus("اسم الأسبوع غير صحيح.");
+        return;
+      }
+
+      const fileName = `W${n} Plan.pdf`;             // مثال: W3 Plan.pdf
+      const blobName = `${prefix}${fileName}`;       // Weak03/G7/W3 Plan.pdf
+
+      // نتأكد هل الملف موجود عبر list على نفس الـ prefix
+      const all = await listAllBlobs(prefix);
+      const plan = all.find(x => (x.fileName || "").toLowerCase() === fileName.toLowerCase());
+
+      if(!plan){
+        setStatus("لا يوجد ملف خطة لهذا الأسبوع/الصف.");
+        return;
+      }
+
+      setStatus("عدد الملفات: 1");
+
+      // عرض بطاقة واحدة
+      renderFiles([{
+  blobName,
+  fileName,
+  last: plan.last,
+  sessionNum: null,
+}]);
+
+
+      return;
+    }
+
+    // ✅ باقي المواد (نفس منطقك القديم)
+    const all = await listAllBlobs(prefix);
+
+    const filtered = all
+      .filter(f => fileHasSubject(f.fileName, subj))
+      .sort((a,b)=>(a.sessionNum ?? 9999) - (b.sessionNum ?? 9999));
+
+    if(!filtered.length){
+      setStatus("لا يوجد ملفات لهذه المادة في هذا الصف.");
+      return;
+    }
+
+    setStatus(`عدد الملفات: ${filtered.length}`);
+    renderFiles(filtered);
+
+  }catch(e){
+    const msg = (e.message || "").includes("LIST_HTTP_403")
+      ? "فشل تحميل القائمة: 403 (صلاحية SAS غير كافية)"
+      : ("حصل خطأ: " + (e.message || e));
+    setStatus(msg);
+  }
+});
+
+
+  // ========= تشغيل أولي =========
+  async function init(){
+    weekSel.disabled = true;
+    gradeSel.disabled = true;
+    subjSel.disabled = true;
+    resetGrade();
+    resetSubject();
+    resetFiles();
+
+    weekSel.innerHTML = `<option value="">تحميل الأسابيع...</option>`;
+    setStatus("تحميل قائمة الأسابيع...");
+
+    try{
+      const weeks = await loadWeeksFromStorage();
+
+      weekSel.innerHTML = `<option value="">اختر الأسبوع</option>`;
+
+      if(!weeks.length){
+        setStatus("ما لقيت ولا أسبوع (Weakxx) داخل التخزين.");
+        weekSel.disabled = false;
+        return;
+      }
+
+      for(const id of weeks){
+        const opt = document.createElement("option");
+        opt.value = id;
+        opt.textContent = weekLabelFromId(id);
+        weekSel.appendChild(opt);
+      }
+
+      setStatus("");
+      weekSel.disabled = false;
+
+    }catch(e){
+      const msg = (e.message || "").includes("LIST_HTTP_403")
+        ? "فشل تحميل الأسابيع: 403 (صلاحية SAS غير كافية)"
+        : ("حصل خطأ أثناء تحميل الأسابيع: " + (e.message || e));
+      setStatus(msg);
+      weekSel.innerHTML = `<option value="">اختر الأسبوع</option>`;
+      weekSel.disabled = false;
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>

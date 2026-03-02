@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>لوحة إدارة روتينات التعلم</title>
+  <style>
+    :root{ --bg:#f6f7fb; --card:#fff; --bd:#eee; --sh:0 8px 25px rgba(0,0,0,.08); }
+    body{font-family:system-ui,Tahoma,Arial; background:var(--bg); margin:0; padding:16px;}
+    .box{max-width:1080px; margin:auto; background:var(--card); border-radius:16px; padding:16px; box-shadow:var(--sh);}
+    h1{margin:0 0 14px; text-align:center; font-size:20px;}
+
+    .filters{display:flex; flex-direction:column; gap:10px; margin-top:10px;}
+    .row{display:flex; flex-direction:column; gap:6px;}
+    label{font-size:13px; color:#444;}
+    select,input[type="number"],input[type="text"],input[type="file"],input[type="password"]{
+      width:100%;
+      padding:12px 10px;
+      border-radius:12px;
+      border:1px solid #ddd;
+      background:#fff;
+      font-size:16px;
+      outline:none;
+      box-sizing:border-box;
+    }
+
+    .hint{margin-top:8px; font-size:12px; color:#777; text-align:center;}
+    .status{margin-top:12px; font-size:13px; color:#555; text-align:center;}
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+      gap:12px;
+      margin-top:14px;
+    }
+    .card{
+      background:#fff;
+      border:1px solid var(--bd);
+      border-radius:16px;
+      padding:12px;
+      box-shadow:0 6px 18px rgba(0,0,0,.05);
+    }
+    .name{font-weight:800; font-size:14px; margin:0 0 8px; word-break:break-word;}
+    .meta{font-size:12px; color:#777; margin-top:10px;}
+
+    .btns{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
+    .btn{
+      flex:1;
+      min-width:90px;
+      text-align:center;
+      text-decoration:none;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid #ddd;
+      font-size:14px;
+      background:#fafafa;
+      color:#111;
+      cursor:pointer;
+      user-select:none;
+    }
+    .btn.primary{background:#e8f0ff; border-color:#cfe0ff;}
+    .btn.danger{background:#ffecec; border-color:#ffd0d0;}
+    .btn.ok{background:#ecfff1; border-color:#c9f5d4;}
+
+    .sectionTitle{
+      font-weight:900;
+      font-size:14px;
+      margin:14px 0 8px;
+      color:#222;
+      text-align:center;
+    }
+
+    /* شاشة كلمة السر */
+    .lock{
+      position:fixed; inset:0; background:rgba(0,0,0,.35);
+      display:flex; align-items:center; justify-content:center;
+      padding:18px;
+    }
+    .lockCard{
+      width:min(420px, 100%);
+      background:#fff; border-radius:16px; box-shadow:var(--sh);
+      padding:16px; border:1px solid #eee;
+    }
+    .lockTitle{font-weight:800; margin:0 0 10px; font-size:16px; text-align:center;}
+    .lockHint{font-size:12px; color:#666; text-align:center; margin-top:8px;}
+
+    .hide{display:none !important;}
+  </style>
+</head>
+
+<body>
+  <!-- شاشة كلمة السر -->
+  <div class="lock" id="lock">
+    <div class="lockCard">
+      <div class="lockTitle">دخول لوحة الإدارة</div>
+      <div class="row">
+        <label for="pw">كلمة السر</label>
+        <input id="pw" type="password" placeholder="اكتب كلمة السر..." autocomplete="off" />
+      </div>
+      <div class="btns" style="margin-top:12px">
+        <button class="btn primary" id="btnLogin">دخول</button>
+      </div>
+      <div class="lockHint">ملاحظة: لا تشارك الرابط إلا مع المشرف.</div>
+    </div>
+  </div>
+
+  <div class="box" id="app" style="display:none">
+    <h1>لوحة إدارة روتينات التعلم</h1>
+
+    <div class="filters">
+      <div class="row">
+        <label for="week">الأسبوع</label>
+        <select id="week" disabled>
+          <option value="">تحميل الأسابيع...</option>
+        </select>
+      </div>
+
+      <!-- شاشة رفع أسبوع كامل (مجلد) -->
+      <div class="card hide" id="uploadWeekCard">
+        <div class="name">رفع أسبوع كامل (مجلد Weakxx)</div>
+        <div class="row">
+          <label for="weekFolder">اختر مجلد الأسبوع (مثال: Weak13)</label>
+          <input id="weekFolder" type="file" webkitdirectory directory multiple />
+          <div class="hint">
+            اختر مجلد Weakxx نفسه (مش ملف ZIP). سيتم رفع كل الملفات بنفس المسارات داخل rot.
+          </div>
+        </div>
+        <div class="btns">
+          <button class="btn ok" id="btnUploadWeekFolder">رفع الأسبوع</button>
+          <button class="btn" id="btnCancelUploadWeek">إلغاء</button>
+        </div>
+        <div class="meta" id="uploadWeekMeta"></div>
+      </div>
+
+      <div class="row">
+        <label for="grade">الصف</label>
+        <select id="grade" disabled>
+          <option value="">اختر الصف</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <label for="subject">المادة</label>
+        <select id="subject" disabled>
+          <option value="">اختر المادة</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="hint" id="hint">
+      اختَر الأسبوع ثم الصف ثم المادة لعرض الملفات. (الخطة تظهر فقط إذا كانت موجودة، وإلا ستجد زر “إضافة خطة الأسبوع”)
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <!-- زر إضافة خطة الأسبوع عند عدم وجودها -->
+    <div class="card hide" id="addPlanCard">
+      <div class="name">خطة الأسبوع غير موجودة</div>
+      <div class="btns">
+        <button class="btn ok" id="btnOpenAddPlan">إضافة خطة الأسبوع</button>
+      </div>
+      <div class="meta" id="planMeta">سيتم حفظها باسم: Wn Plan.pdf داخل مسار الأسبوع/الصف.</div>
+    </div>
+
+    <!-- قائمة الملفات -->
+    <div class="grid" id="files"></div>
+
+    <div class="sectionTitle">إضافة ملف</div>
+
+    <!-- إضافة ملف تحت -->
+    <div class="card" id="addFileCard">
+      <div class="row">
+        <label>اسم الملف الذي سيتم حفظه</label>
+        <input id="finalNamePreview" type="text" readonly />
+        <div class="hint" id="nameHint"></div>
+      </div>
+
+      <div class="row" id="sessionRow">
+        <label for="sessionNum">رقم الجلسة</label>
+        <input id="sessionNum" type="number" min="1" max="50" placeholder="مثال: 1" />
+      </div>
+
+      <div class="row">
+        <label for="fileAdd">اختر ملف</label>
+        <input id="fileAdd" type="file" />
+      </div>
+
+      <div class="btns">
+        <button class="btn primary" id="btnAddFile">إضافة ملف</button>
+      </div>
+
+      <div class="meta" id="addMeta">اختَر (أسبوع/صف/مادة) أولًا.</div>
+    </div>
+
+    <div class="footer" style="margin-top:14px; font-size:12px; color:#888; text-align:center;">
+      تنبيه: الحذف فوري — انتبه قبل ما تضغط.
+    </div>
+  </div>
+
+<script>
+  // ========= كلمة السر =========
+  const ADMIN_PASSWORD = "20252026";
+
+  // ========= إعدادات Azure =========
+  const ACCOUNT_NAME = "rotstorage123";
+  const CONTAINER = "rot";
+
+  // ضع SAS الحقيقي هنا (لا تنشره)
+  // لازم يبدأ بـ ?sp=...
+  const SAS_Q_ADMIN = `?sp=racwdli&st=2026-01-01T11:42:10Z&se=2028-03-01T19:57:10Z&sv=2024-11-04&sr=c&sig=1H5kKe3m%2FaV123ZXuppNL%2FUpVaa2ANksXTSx%2BGctOkI%3D`;
+const SAS_AND_ADMIN = SAS_Q_ADMIN.replace("?", "&");
+
+  const MAX_WEEK = 25;
+
+  const GRADES = [
+    { id:"G1", label:"الصف الأول" },
+    { id:"G2", label:"الصف الثاني" },
+    { id:"G3", label:"الصف الثالث" },
+    { id:"G4", label:"الصف الرابع" },
+    { id:"G5", label:"الصف الخامس" },
+    { id:"G6", label:"الصف السادس" },
+    { id:"G7", label:"الصف السابع" },
+    { id:"G8", label:"الصف الثامن" },
+    { id:"G9", label:"الصف التاسع" },
+  ];
+
+  // المواد الأساسية (الخطة بتظهر فقط إذا موجودة)
+  const SUBJECTS_BASE = [
+    { id:"Arabic",  label:"لغة عربية" },
+    { id:"MATH",    label:"رياضيات" },
+    { id:"Science", label:"علوم" },
+    { id:"English", label:"إنجليزي" },
+  ];
+
+  // ========= عناصر =========
+  const weekSel  = document.getElementById("week");
+  const gradeSel = document.getElementById("grade");
+  const subjSel  = document.getElementById("subject");
+  const filesGrid = document.getElementById("files");
+
+  const addPlanCard = document.getElementById("addPlanCard");
+  const btnOpenAddPlan = document.getElementById("btnOpenAddPlan");
+  const planMeta = document.getElementById("planMeta");
+
+  const uploadWeekCard = document.getElementById("uploadWeekCard");
+  const weekFolder = document.getElementById("weekFolder");
+  const btnUploadWeekFolder = document.getElementById("btnUploadWeekFolder");
+  const btnCancelUploadWeek = document.getElementById("btnCancelUploadWeek");
+  const uploadWeekMeta = document.getElementById("uploadWeekMeta");
+
+  const sessionRow = document.getElementById("sessionRow");
+  const sessionNumEl = document.getElementById("sessionNum");
+  const fileAdd = document.getElementById("fileAdd");
+  const btnAddFile = document.getElementById("btnAddFile");
+  const finalNamePreview = document.getElementById("finalNamePreview");
+  const nameHint = document.getElementById("nameHint");
+  const addMeta = document.getElementById("addMeta");
+
+  function setStatus(msg){ document.getElementById("status").textContent = msg || ""; }
+
+  function encodeBlobPath(path){
+    return path.split("/").map(seg => encodeURIComponent(seg)).join("/");
+  }
+
+  function weekNumFromId(weekId){
+    const m = (weekId || "").match(/^Weak(\d{2})$/i);
+    return m ? parseInt(m[1],10) : null;
+  }
+
+  function toArabicOrdinal(n){
+    const map = {
+      1:"الأول", 2:"الثاني", 3:"الثالث", 4:"الرابع", 5:"الخامس",
+      6:"السادس", 7:"السابع", 8:"الثامن", 9:"التاسع", 10:"العاشر",
+      11:"الحادي عشر", 12:"الثاني عشر", 13:"الثالث عشر", 14:"الرابع عشر", 15:"الخامس عشر",
+      16:"السادس عشر", 17:"السابع عشر", 18:"الثامن عشر", 19:"التاسع عشر", 20:"العشرون",
+      21:"الحادي والعشرون", 22:"الثاني والعشرون", 23:"الثالث والعشرون", 24:"الرابع والعشرون", 25:"الخامس والعشرون"
+    };
+    return map[n] || ("" + n);
+  }
+
+  function weekLabelFromId(weekId){
+    const m = weekId.match(/^Weak(\d{2})$/i);
+    if(!m) return weekId;
+    const n = parseInt(m[1], 10);
+    return "الأسبوع " + toArabicOrdinal(n);
+  }
+
+  function extractSessionNum(fileName){
+    const m = (fileName||"").match(/(?:^|[\s_-])L(\d+)(?:[\s_.-]|$)/i) || (fileName||"").match(/L(\d+)/i);
+    return m ? parseInt(m[1],10) : null;
+  }
+
+  // ========= Azure LIST =========
+  async function listBlobsPaged(prefix, marker){
+    const listUrl =
+      `https://${ACCOUNT_NAME}.blob.core.windows.net/${CONTAINER}` +
+      `?restype=container&comp=list` +
+      (prefix ? `&prefix=${encodeURIComponent(prefix)}` : "") +
+      (marker ? `&marker=${encodeURIComponent(marker)}` : "") +
+      `${SAS_AND_ADMIN}`;
+
+    const r = await fetch(listUrl);
+    if(!r.ok) throw new Error("LIST_HTTP_" + r.status);
+
+    const xmlText = await r.text();
+    const doc = new DOMParser().parseFromString(xmlText, "application/xml");
+
+    const blobs = [...doc.getElementsByTagName("Blob")];
+    const items = blobs.map(b=>{
+      const name = b.getElementsByTagName("Name")[0]?.textContent || "";
+      const last = b.getElementsByTagName("Last-Modified")[0]?.textContent || "";
+      const fileName = name.split("/").pop();
+      return { blobName:name, fileName, last, sessionNum: extractSessionNum(fileName) };
+    }).filter(x => x.fileName);
+
+    const nextMarker = doc.getElementsByTagName("NextMarker")[0]?.textContent || "";
+    return { items, nextMarker: nextMarker || null };
+  }
+
+  async function listAllBlobs(prefix){
+    let marker = null;
+    const all = [];
+    do{
+      const { items, nextMarker } = await listBlobsPaged(prefix, marker);
+      all.push(...items);
+      marker = nextMarker;
+    }while(marker);
+    return all;
+  }
+
+  // ========= روابط وعمليات blobs =========
+  function blobUrl(blobName){
+    return `https://${ACCOUNT_NAME}.blob.core.windows.net/${CONTAINER}/${encodeBlobPath(blobName)}${SAS_Q_ADMIN}`;
+  }
+
+  async function deleteBlob(blobName){
+    const url = blobUrl(blobName);
+    const r = await fetch(url, { method:"DELETE" });
+    if(!r.ok && r.status !== 404) throw new Error("DEL_HTTP_" + r.status);
+  }
+
+  async function uploadBlob(blobName, file){
+    const url = blobUrl(blobName);
+    const r = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "x-ms-blob-type": "BlockBlob",
+        "Content-Type": file?.type || "application/octet-stream"
+      },
+      body: file
+    });
+    if(!r.ok) throw new Error("PUT_HTTP_" + r.status);
+  }
+
+  async function uploadReplace(blobName, file){
+    await deleteBlob(blobName);
+    await uploadBlob(blobName, file);
+  }
+
+  // ========= تعبئة القوائم =========
+  function resetGrade(){ gradeSel.innerHTML = `<option value="">اختر الصف</option>`; gradeSel.disabled = true; }
+  function resetSubject(){ subjSel.innerHTML = `<option value="">اختر المادة</option>`; subjSel.disabled = true; }
+
+  function fillGrades(){
+    resetGrade();
+    for(const g of GRADES){
+      const opt = document.createElement("option");
+      opt.value = g.id;
+      opt.textContent = g.label;
+      gradeSel.appendChild(opt);
+    }
+    gradeSel.disabled = false;
+  }
+
+  function fillSubjects(base, hasPlan){
+    resetSubject();
+
+    for(const s of base){
+      const opt = document.createElement("option");
+      opt.value = s.id;
+      opt.textContent = s.label;
+      subjSel.appendChild(opt);
+    }
+
+    // خطة الأسبوع تظهر فقط إذا موجودة
+    if(hasPlan){
+      const opt = document.createElement("option");
+      opt.value = "PLAN";
+      opt.textContent = "خطة الأسبوع";
+      subjSel.appendChild(opt);
+    }
+
+    subjSel.disabled = false;
+  }
+
+  // ========= اسم الخطة (حسب الموجود عندك) =========
+  function planFileName(weekId){
+    const n = weekNumFromId(weekId);
+    if(!n) return null;
+    return `W${n} Plan.pdf`; // ✅ مطابق للموجود عندك
+  }
+
+  // ========= عرض الملفات: تنزيل/حذف/استبدال =========
+  function renderFiles(items){
+    filesGrid.innerHTML = "";
+
+    for(const f of items){
+      // تجاهل placeholder إذا ظهر
+      if((f.fileName || "").toLowerCase() === ".keep") continue;
+
+      const url = blobUrl(f.blobName);
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const replaceId = "rep_" + Math.random().toString(16).slice(2);
+
+      card.innerHTML = `
+        <div class="name">${f.fileName}</div>
+        <div class="btns">
+          <a class="btn" href="${url}" target="_blank" rel="noopener">تنزيل</a>
+          <button class="btn danger" data-del="${encodeURIComponent(f.blobName)}">حذف</button>
+          <label class="btn primary" for="${replaceId}">استبدال</label>
+          <input id="${replaceId}" type="file" class="hide" data-rep="${encodeURIComponent(f.blobName)}" />
+        </div>
+        <div class="meta">آخر تعديل: ${f.last ? new Date(f.last).toLocaleString("ar") : "-"}</div>
+      `;
+
+      filesGrid.appendChild(card);
+    }
+
+    // حذف
+    filesGrid.querySelectorAll("button[data-del]").forEach(btn=>{
+      btn.addEventListener("click", async ()=>{
+        const blobName = decodeURIComponent(btn.getAttribute("data-del") || "");
+        if(!confirm("متأكد بدك تحذف؟\n" + blobName)) return;
+
+        setStatus("جاري الحذف...");
+        try{
+          await deleteBlob(blobName);
+          setStatus("تم الحذف ✅");
+          await refreshList();
+        }catch(e){
+          setStatus("فشل الحذف: " + (e.message || e));
+        }
+      });
+    });
+
+    // استبدال
+    filesGrid.querySelectorAll("input[data-rep]").forEach(inp=>{
+      inp.addEventListener("change", async ()=>{
+        const blobName = decodeURIComponent(inp.getAttribute("data-rep") || "");
+        const file = inp.files && inp.files[0];
+        if(!file) return;
+
+        setStatus("جاري الاستبدال...");
+        try{
+          await uploadReplace(blobName, file);
+          setStatus("تم الاستبدال ✅");
+          inp.value = "";
+          await refreshList();
+        }catch(e){
+          setStatus("فشل الاستبدال: " + (e.message || e));
+        }
+      });
+    });
+  }
+
+  // ========= بناء اسم الملف عند الإضافة =========
+  function buildNewFileName(weekId, subjId, sessionNum, file){
+    const n = weekNumFromId(weekId);
+    if(!n) throw new Error("اسم الأسبوع غير صحيح");
+
+    const ext = (file?.name && file.name.includes(".")) ? ("." + file.name.split(".").pop()) : ".pdf";
+
+    // خطة: W7 Plan.pdf
+    if(subjId === "PLAN"){
+      return `W${n} Plan${ext}`;
+    }
+
+    // جلسة: W12 G9 L1 Arabic.pdf (زي طلبك)
+    if(!sessionNum || sessionNum < 1) throw new Error("لازم تختار رقم الجلسة");
+    const gradeId = gradeSel.value; // من الاختيار
+    return `W${n} ${gradeId} L${sessionNum} ${subjId}${ext}`;
+  }
+
+  function buildBlobNameForNewFile(weekId, gradeId, fileName){
+    // مسار ثابت داخل الأسبوع/الصف:
+    return `${weekId}/${gradeId}/${fileName}`;
+  }
+
+  function updateAddPreview(){
+    const week = weekSel.value;
+    const grade = gradeSel.value;
+    const subj = subjSel.value;
+
+    const file = fileAdd.files && fileAdd.files[0];
+    const sessionNum = parseInt(sessionNumEl.value || "", 10);
+
+    if(!week || week === "__UPLOAD_WEEK__" || !grade || !subj){
+      finalNamePreview.value = "";
+      nameHint.textContent = "";
+      addMeta.textContent = "اختَر (أسبوع/صف/مادة) أولًا.";
+      return;
+    }
+
+    // الخطة لا تسأل عن جلسة
+    if(subj === "PLAN"){
+      sessionRow.classList.add("hide");
+      sessionNumEl.value = "";
+      nameHint.textContent = "الخطة لا تحتاج رقم جلسة.";
+    }else{
+      sessionRow.classList.remove("hide");
+      nameHint.textContent = "لازم تكتب رقم الجلسة قبل الإضافة.";
+    }
+
+    try{
+      const fname = buildNewFileName(week, subj, sessionNum, file || {name:"file.pdf"});
+      finalNamePreview.value = fname;
+      addMeta.textContent = "جاهز للإضافة.";
+    }catch(e){
+      finalNamePreview.value = "";
+      addMeta.textContent = e.message || "غير جاهز.";
+    }
+  }
+
+  // ========= Refresh list + منطق الخطة =========
+  async function refreshList(){
+    filesGrid.innerHTML = "";
+    addPlanCard.classList.add("hide");
+
+    const week = weekSel.value;
+    const grade = gradeSel.value;
+    if(!week || week === "__UPLOAD_WEEK__" || !grade) {
+      setStatus("");
+      return;
+    }
+
+    const prefix = `${week}/${grade}/`;
+    setStatus("تحميل القائمة...");
+
+    try{
+      const all = await listAllBlobs(prefix);
+
+      // هل الخطة موجودة؟
+      const pName = planFileName(week);
+      const hasPlan = !!all.find(x => (x.fileName||"").toLowerCase() === (pName||"").toLowerCase());
+
+      // عبّي المواد (وخطة فقط إذا موجودة)
+      fillSubjects(SUBJECTS_BASE, hasPlan);
+
+      // إذا الخطة مش موجودة: اعرض زر “إضافة خطة الأسبوع”
+      if(!hasPlan){
+        addPlanCard.classList.remove("hide");
+        const n = weekNumFromId(week);
+        planMeta.textContent = `سيتم حفظها باسم: W${n} Plan.pdf`;
+      }
+
+      // فلترة حسب المادة إن كانت مختارة
+      const subj = subjSel.value;
+      let show = all;
+
+      if(subj){
+        if(subj === "PLAN"){
+          show = all.filter(x => (x.fileName||"").toLowerCase() === (pName||"").toLowerCase());
+        } else {
+          // فلترة بسيطة: وجود اسم المادة في اسم الملف
+          show = all.filter(x => (x.fileName||"").toLowerCase().includes(subj.toLowerCase()));
+        }
+      }
+
+      show = show.sort((a,b)=>(a.sessionNum ?? 9999) - (b.sessionNum ?? 9999));
+
+      const count = show.filter(x => (x.fileName||"").toLowerCase() !== ".keep").length;
+      setStatus(`عدد الملفات: ${count}`);
+      renderFiles(show);
+
+    }catch(e){
+      const msg = (e.message || "").includes("LIST_HTTP_403")
+        ? "403: مشكلة صلاحيات SAS أو انتهت."
+        : ("حصل خطأ: " + (e.message || e));
+      setStatus(msg);
+    } finally {
+      updateAddPreview();
+    }
+  }
+
+  // ========= تحميل الأسابيع + إضافة خيار “رفع أسبوع” =========
+  async function loadWeeksFromStorage(){
+    const all = await listAllBlobs("Weak");
+    const set = new Set();
+
+    for(const x of all){
+      const first = (x.blobName || "").split("/")[0];
+      const m = first.match(/^Weak(\d{1,2})$/i);
+      if(!m) continue;
+      const n = parseInt(m[1], 10);
+      if(n >= 1 && n <= MAX_WEEK){
+        const id = "Weak" + String(n).padStart(2, "0");
+        set.add(id);
+      }
+    }
+
+    return [...set].sort((a,b)=> parseInt(a.slice(4),10) - parseInt(b.slice(4),10));
+  }
+
+  function fillWeeks(weeks){
+    weekSel.innerHTML = `<option value="">اختر الأسبوع</option>`;
+    for(const id of weeks){
+      const opt = document.createElement("option");
+      opt.value = id;
+      opt.textContent = weekLabelFromId(id);
+      weekSel.appendChild(opt);
+    }
+
+    // خيار رفع أسبوع كامل
+    const addOpt = document.createElement("option");
+    addOpt.value = "__UPLOAD_WEEK__";
+    addOpt.textContent = "➕ إضافة أسبوع (رفع مجلد Weakxx)";
+    weekSel.appendChild(addOpt);
+
+    weekSel.disabled = false;
+  }
+
+  // ========= رفع مجلد أسبوع كامل =========
+  async function uploadWeekFolderAll(files){
+    if(!files.length) throw new Error("اختار مجلد الأسبوع.");
+
+    const firstPath = files[0].webkitRelativePath || "";
+    const top = firstPath.split("/")[0]; // Weak13
+    if(!/^Weak\d{1,2}$/i.test(top)){
+      throw new Error("لازم تختار مجلد اسمه Weakxx مثل Weak13");
+    }
+
+    // رفع كل الملفات مع نفس المسار
+    for(let i=0;i<files.length;i++){
+      const f = files[i];
+      const rel = f.webkitRelativePath; // Weak13/G9/...
+      if(!rel) continue;
+      if(rel.endsWith("/")) continue;
+
+      setStatus(`(${i+1}/${files.length}) رفع: ${rel}`);
+      await uploadReplace(rel, f);
+    }
+
+    return top;
+  }
+
+  // ========= أحداث الواجهة =========
+  weekSel.addEventListener("change", async ()=>{
+    setStatus("");
+    filesGrid.innerHTML = "";
+    addPlanCard.classList.add("hide");
+    uploadWeekCard.classList.add("hide");
+
+    resetGrade();
+    resetSubject();
+
+    const v = weekSel.value;
+
+    if(v === "__UPLOAD_WEEK__"){
+      uploadWeekCard.classList.remove("hide");
+      gradeSel.disabled = true;
+      subjSel.disabled = true;
+      updateAddPreview();
+      return;
+    }
+
+    if(!v){
+      updateAddPreview();
+      return;
+    }
+
+    fillGrades();
+    updateAddPreview();
+  });
+
+  gradeSel.addEventListener("change", async ()=>{
+    filesGrid.innerHTML = "";
+    addPlanCard.classList.add("hide");
+    resetSubject();
+
+    if(!gradeSel.value){ updateAddPreview(); return; }
+
+    subjSel.disabled = false;
+    await refreshList();
+  });
+
+  subjSel.addEventListener("change", async ()=>{
+    await refreshList();
+  });
+
+  // زر “إضافة خطة الأسبوع”
+  btnOpenAddPlan.addEventListener("click", ()=>{
+    // أضف PLAN مؤقتًا واختاره
+    const exists = [...subjSel.options].some(o=>o.value==="PLAN");
+    if(!exists){
+      const opt = document.createElement("option");
+      opt.value = "PLAN";
+      opt.textContent = "خطة الأسبوع";
+      subjSel.appendChild(opt);
+    }
+    subjSel.value = "PLAN";
+    updateAddPreview();
+    document.getElementById("hint").textContent = "الآن اختر ملف الخطة واضغط (إضافة ملف).";
+    window.scrollTo({top: document.body.scrollHeight, behavior:"smooth"});
+  });
+
+  // رفع أسبوع كامل
+  btnUploadWeekFolder.addEventListener("click", async ()=>{
+    const files = weekFolder.files ? [...weekFolder.files] : [];
+    setStatus("");
+    uploadWeekMeta.textContent = "";
+
+    try{
+      if(!files.length) { alert("اختار مجلد الأسبوع."); return; }
+      setStatus(`جاري رفع ${files.length} ملف...`);
+      const weekId = await uploadWeekFolderAll(files);
+      setStatus("تم رفع الأسبوع ✅");
+      uploadWeekMeta.textContent = `تم رفع: ${weekId}`;
+
+      weekFolder.value = "";
+
+      // إعادة تحميل الأسابيع
+      const weeks = await loadWeeksFromStorage();
+      fillWeeks(weeks);
+      weekSel.value = weekId;
+
+      uploadWeekCard.classList.add("hide");
+      fillGrades();
+      updateAddPreview();
+
+    }catch(e){
+      setStatus("فشل رفع الأسبوع: " + (e.message || e));
+      uploadWeekMeta.textContent = (e.message || e);
+    }
+  });
+
+  btnCancelUploadWeek.addEventListener("click", ()=>{
+    uploadWeekCard.classList.add("hide");
+    weekSel.value = "";
+    setStatus("");
+    updateAddPreview();
+  });
+
+  // تحديث معاينة الاسم
+  sessionNumEl.addEventListener("input", updateAddPreview);
+  fileAdd.addEventListener("change", updateAddPreview);
+  subjSel.addEventListener("change", updateAddPreview);
+  gradeSel.addEventListener("change", updateAddPreview);
+  weekSel.addEventListener("change", updateAddPreview);
+
+  // إضافة ملف (زر الإضافة أسفل)
+  btnAddFile.addEventListener("click", async ()=>{
+    const week = weekSel.value;
+    const grade = gradeSel.value;
+    const subj = subjSel.value;
+
+    if(!week || week === "__UPLOAD_WEEK__" || !grade || !subj){
+      alert("اختار الأسبوع والصف والمادة أولاً.");
+      return;
+    }
+
+    const file = fileAdd.files && fileAdd.files[0];
+    if(!file){
+      alert("اختار ملف.");
+      return;
+    }
+
+    const sessionNum = parseInt(sessionNumEl.value || "", 10);
+
+    setStatus("جاري الإضافة...");
+    try{
+      const fname = buildNewFileName(week, subj, sessionNum, file);
+      const blobName = buildBlobNameForNewFile(week, grade, fname);
+
+      await uploadReplace(blobName, file);
+      setStatus("تمت الإضافة ✅");
+
+      fileAdd.value = "";
+      sessionNumEl.value = "";
+      updateAddPreview();
+      await refreshList();
+    }catch(e){
+      setStatus("فشل الإضافة: " + (e.message || e));
+    }
+  });
+
+  // ========= تشغيل أولي =========
+  async function init(){
+    weekSel.disabled = true;
+    gradeSel.disabled = true;
+    subjSel.disabled = true;
+
+    weekSel.innerHTML = `<option value="">تحميل الأسابيع...</option>`;
+    setStatus("تحميل قائمة الأسابيع...");
+
+    try{
+      const weeks = await loadWeeksFromStorage();
+      fillWeeks(weeks);
+      setStatus("");
+    }catch(e){
+      const msg = (e.message || "").includes("LIST_HTTP_403")
+        ? "فشل تحميل الأسابيع: 403 (SAS غير كافي أو منتهي)"
+        : ("حصل خطأ أثناء تحميل الأسابيع: " + (e.message || e));
+      setStatus(msg);
+      weekSel.disabled = false;
+    }
+
+    updateAddPreview();
+  }
+
+  // ========= تسجيل الدخول =========
+  function unlock(){
+    document.getElementById("lock").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    init();
+  }
+
+  document.getElementById("btnLogin").addEventListener("click", ()=>{
+    const pw = (document.getElementById("pw").value || "").trim();
+    if(pw === ADMIN_PASSWORD) unlock();
+    else alert("كلمة السر غلط");
+  });
+
+  document.getElementById("pw").addEventListener("keydown", (e)=>{
+    if(e.key === "Enter") document.getElementById("btnLogin").click();
+  });
+</script>
+</body>
+</html>
