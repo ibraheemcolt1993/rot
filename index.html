@@ -4,52 +4,74 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>روتينات التعلم</title>
-    <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="vendor/tabler/tabler.min.css" />
+  <link rel="stylesheet" href="rtl.css" />
 
 </head>
 
-<body>
-  <div class="box">
-    <h1>روتينات التعلم</h1>
-
-    <div class="filters">
-      <div class="row">
+<body class="theme-light ui-v2">
+  <div class="page">
+    <div class="container-xl py-4">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <h1 class="card-title mb-0">روتينات التعلم</h1>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-12 col-md-6 col-lg-3">
         <label for="term">الفصل الدراسي</label>
-        <select id="term">
+        <select id="term" class="form-select">
           <option value="FIRST">الفصل الدراسي الأول</option>
           <option value="SECOND">الفصل الدراسي الثاني</option>
         </select>
       </div>
 
-      <div class="row">
+            <div class="col-12 col-md-6 col-lg-3">
         <label for="week">الأسبوع</label>
-        <select id="week" disabled>
+        <select id="week" class="form-select" disabled>
           <option value="">تحميل الأسابيع...</option>
         </select>
       </div>
 
-      <div class="row">
+            <div class="col-12 col-md-6 col-lg-3">
         <label for="grade">الصف</label>
-        <select id="grade" disabled>
+        <select id="grade" class="form-select" disabled>
           <option value="">اختر الصف</option>
         </select>
       </div>
 
-      <div class="row">
+            <div class="col-12 col-md-6 col-lg-3">
         <label for="subject">المادة</label>
-        <select id="subject" disabled>
+        <select id="subject" class="form-select" disabled>
           <option value="">اختر المادة</option>
         </select>
+            </div>
+          </div>
+
+    <div class="hint mt-3" id="hint">اختر الأسبوع ثم الصف ثم المادة لعرض الملفات.</div>
+    <div class="status" id="status"></div>
+    <div class="row g-3 mt-1" id="files">
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="card session-card"><div class="card-body"><h3 class="card-title">الجلسة الأولى</h3><a class="btn btn-primary w-100" href="#">تنزيل الملف</a><div class="meta mt-2">آخر تعديل: ....</div></div></div>
+      </div>
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="card session-card"><div class="card-body"><h3 class="card-title">الجلسة الثانية</h3><a class="btn btn-primary w-100" href="#">تنزيل الملف</a><div class="meta mt-2">آخر تعديل: ....</div></div></div>
+      </div>
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="card session-card"><div class="card-body"><h3 class="card-title">الجلسة الثالثة</h3><a class="btn btn-primary w-100" href="#">تنزيل الملف</a><div class="meta mt-2">آخر تعديل: ....</div></div></div>
+      </div>
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="card session-card"><div class="card-body"><h3 class="card-title">الجلسة الرابعة</h3><a class="btn btn-primary w-100" href="#">تنزيل الملف</a><div class="meta mt-2">آخر تعديل: ....</div></div></div>
       </div>
     </div>
 
-    <div class="hint" id="hint">اختر الأسبوع ثم الصف ثم المادة لعرض الملفات.</div>
-    <div class="status" id="status"></div>
-    <div class="grid" id="files"></div>
-
     <div class="footer">تنزيل الملفات يتم مباشرة بدون عرض داخل الصفحة.</div>
+        </div>
+      </div>
+    </div>
   </div>
 
+<script src="vendor/tabler/tabler.min.js"></script>
 <script>
   // ========= إعدادات Azure =========
   const ACCOUNT_NAME = "rotstorage123";
@@ -287,7 +309,7 @@
       card.className = "card";
       card.innerHTML = `
         <div class="name">${title}</div>
-        <a class="btn" href="${downloadUrl}" download>تنزيل الملف</a>
+        <a class="btn btn-primary w-100" href="${downloadUrl}" download>تنزيل الملف</a>
         <div class="meta">آخر تعديل: ${f.last ? new Date(f.last).toLocaleString("ar") : "-"}</div>
       `;
       grid.appendChild(card);
@@ -471,4 +493,3 @@
 </script>
 </body>
 </html>
-

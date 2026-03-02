@@ -1,0 +1,8 @@
+html[dir="rtl"],body{direction:rtl;text-align:right}
+.ui-v2 label{display:block;margin-bottom:.35rem;font-weight:600}
+.ui-v2 .hint,.ui-v2 .status,.ui-v2 .footer,.ui-v2 .meta{font-size:.9rem}
+.ui-v2 #files .card{height:100%}
+.ui-v2 .name{font-weight:700;margin-bottom:.6rem}
+.ui-v2 .btn{text-align:center}
+.ui-v2 .box{max-width:1100px;margin:auto}
+.ui-v2 .filters{margin-bottom:1rem}

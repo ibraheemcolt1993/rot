@@ -1,0 +1,39 @@
+:root{--v2-primary:#0b6bcb;--v2-primary-2:#1693e6;--v2-bg:#f3f7fc;--v2-surface:#ffffff;--v2-text:#0f172a;--v2-muted:#64748b;--v2-border:#dbe5f0;--v2-success:#16a34a;--v2-danger:#dc2626;--v2-shadow:0 10px 30px rgba(2,6,23,.08)}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+.ui-v2{font-family:"Tajawal",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--v2-text);background:radial-gradient(circle at 10% 0,#dbeafe 0,transparent 33%),radial-gradient(circle at 90% 0,#e0f2fe 0,transparent 33%),var(--v2-bg)}
+.ui-v2 .page{min-height:100vh}
+.ui-v2 .container-xl{width:min(1120px,calc(100% - 2rem));margin-inline:auto}
+.ui-v2 .py-4{padding:1.5rem 0}
+.ui-v2 .mt-1{margin-top:.25rem}.ui-v2 .mt-2{margin-top:.5rem}.ui-v2 .mt-3{margin-top:1rem}.ui-v2 .mb-0{margin-bottom:0}
+.ui-v2 .card{background:var(--v2-surface);border:1px solid var(--v2-border);border-radius:16px;box-shadow:var(--v2-shadow)}
+.ui-v2 .card-header{padding:1rem 1.25rem;border-bottom:1px solid var(--v2-border);background:linear-gradient(135deg,#f8fbff,#eef7ff)}
+.ui-v2 .card-body{padding:1.25rem}
+.ui-v2 .card-title{margin:0;font-size:1.15rem;font-weight:800}
+.ui-v2 .shadow-sm{box-shadow:var(--v2-shadow)}
+.ui-v2 .row{display:flex;flex-wrap:wrap;gap:1rem}
+.ui-v2 .g-3{gap:1rem}
+.ui-v2 .g-3>*{padding:0}
+.ui-v2 .col-12{width:100%}
+.ui-v2 .col-md-6,.ui-v2 .col-lg-3,.ui-v2 .col-xl-3{width:100%}
+@media(min-width:768px){.ui-v2 .col-md-6{width:calc(50% - .5rem)}}
+@media(min-width:992px){.ui-v2 .col-lg-3{width:calc(25% - .75rem)}}
+@media(min-width:1200px){.ui-v2 .col-xl-3{width:calc(25% - .75rem)}}
+.ui-v2 .form-select,.ui-v2 .form-control,.ui-v2 input[type="password"],.ui-v2 input[type="number"],.ui-v2 input[type="text"],.ui-v2 input[type="file"]{display:block;width:100%;padding:.66rem .8rem;border:1px solid #cbd5e1;border-radius:12px;background:#fff;font-size:.95rem;outline:none;transition:.2s ease}
+.ui-v2 .form-select:focus,.ui-v2 .form-control:focus,.ui-v2 input:focus{border-color:#93c5fd;box-shadow:0 0 0 3px rgba(59,130,246,.2)}
+.ui-v2 .btn{display:inline-block;border:none;border-radius:12px;padding:.62rem .95rem;text-decoration:none;cursor:pointer;font-weight:700;line-height:1.2}
+.ui-v2 .btn-primary{background:linear-gradient(135deg,var(--v2-primary),var(--v2-primary-2));color:#fff}
+.ui-v2 .btn.ok{background:var(--v2-success);color:#fff}
+.ui-v2 .btn.danger{background:var(--v2-danger);color:#fff}
+.ui-v2 .w-100{width:100%}
+.ui-v2 .hint,.ui-v2 .status,.ui-v2 .meta,.ui-v2 .footer{color:var(--v2-muted)}
+.ui-v2 .footer{text-align:center}
+.ui-v2 .btns{display:flex;flex-wrap:wrap;gap:.5rem}
+.ui-v2 .session-card .card-title{font-size:1.05rem;margin-bottom:.65rem}
+.ui-v2 .lock{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:1rem;z-index:50}
+.ui-v2 .lockCard{width:min(460px,100%);background:#fff;border:1px solid var(--v2-border);border-radius:16px;padding:1rem;box-shadow:0 16px 40px rgba(2,6,23,.25)}
+.ui-v2 .lockTitle{font-size:1.1rem;font-weight:700;margin-bottom:.75rem;text-align:center}
+.ui-v2 .lockHint{font-size:.85rem;color:var(--v2-muted);text-align:center;margin-top:.6rem}
+.ui-v2 .sectionTitle{font-size:1rem;font-weight:700;margin:1rem 0 .6rem}
+.ui-v2 .hide{display:none!important}
+.ui-v2 .theme-light{background:var(--v2-bg)}
