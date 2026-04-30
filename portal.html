@@ -51,11 +51,21 @@
       <div class="card hide" id="uploadWeekCard">
         <div class="name">رفع أسبوع كامل (مجلد Weakxx)</div>
         <div class="row">
-          <label for="weekFolder">اختر مجلد الأسبوع (مثال: Weak13)</label>
+          <label for="uploadWeekNumber">رقم الأسبوع المراد إنشاؤه</label>
+          <select id="uploadWeekNumber" class="form-select"></select>
+          <div class="hint">اختَر الأسبوع أولاً، وسيتم حفظ الملفات داخل مجلد Weakxx بهذا الرقم بغض النظر عن اسم المجلد المحلي.</div>
+        </div>
+        <div class="row">
+          <label for="weekFolder">اختر مجلد الأسبوع (أي اسم)</label>
           <input id="weekFolder" type="file" webkitdirectory directory multiple />
           <div class="hint">
-            اختر مجلد Weakxx نفسه (مش ملف ZIP). سيتم رفع كل الملفات بنفس المسارات داخل rot.
+            اختر أي مجلد (مش ملف ZIP). سيتم رفع كل الملفات بنفس المسارات داخل rot مع إعادة تسمية المجلد العلوي تلقائياً إلى Weakxx.
           </div>
+        </div>
+        <div class="row">
+          <label for="weekArchive">أو ارفع ملف ZIP / RAR</label>
+          <input id="weekArchive" type="file" accept=".zip,.rar,application/zip,application/x-rar-compressed" />
+          <div class="hint">يمكن رفع ZIP أو RAR، وحتى لو فيه مجلد رئيسي زائد سيتم تجاوزُه تلقائياً والبدء من G1..G9.</div>
         </div>
         <div class="btns">
           <button class="btn ok" id="btnUploadWeekFolder">رفع الأسبوع</button>
@@ -138,6 +148,8 @@
   </div>
 
 <script src="vendor/tabler/tabler.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/unrar-js@0.2.2/dist/bundle.min.js"></script>
 <script>
   // ========= كلمة السر =========
   const ADMIN_PASSWORD = "20252026";
@@ -189,7 +201,9 @@ const SAS_AND_ADMIN = SAS_Q_ADMIN.replace("?", "&");
   const planMeta = document.getElementById("planMeta");
 
   const uploadWeekCard = document.getElementById("uploadWeekCard");
+  const uploadWeekNumber = document.getElementById("uploadWeekNumber");
   const weekFolder = document.getElementById("weekFolder");
+  const weekArchive = document.getElementById("weekArchive");
   const btnUploadWeekFolder = document.getElementById("btnUploadWeekFolder");
   const btnCancelUploadWeek = document.getElementById("btnCancelUploadWeek");
   const uploadWeekMeta = document.getElementById("uploadWeekMeta");
@@ -658,7 +672,7 @@ const SAS_AND_ADMIN = SAS_Q_ADMIN.replace("?", "&");
       // خيار رفع أسبوع كامل (للفصل الثاني)
       const addOpt = document.createElement("option");
       addOpt.value = "__UPLOAD_WEEK__";
-      addOpt.textContent = "➕ إضافة أسبوع (رفع مجلد Weakxx)";
+      addOpt.textContent = "➕ إضافة أسبوع (رفع مجلد بأي اسم)";
       weekSel.appendChild(addOpt);
     }
 
@@ -666,29 +680,141 @@ const SAS_AND_ADMIN = SAS_Q_ADMIN.replace("?", "&");
   }
 
   // ========= رفع مجلد أسبوع كامل =========
-  async function uploadWeekFolderAll(files){
-    if(!files.length) throw new Error("اختار مجلد الأسبوع.");
+  function fillUploadWeekNumbers(){
+    uploadWeekNumber.innerHTML = `<option value="">اختر الأسبوع</option>`;
+    for(let n=1;n<=MAX_WEEK;n++){
+      const id = "Weak" + String(n).padStart(2, "0");
+      const opt = document.createElement("option");
+      opt.value = id;
+      opt.textContent = weekLabelFromId(id);
+      uploadWeekNumber.appendChild(opt);
+    }
+  }
 
-    const firstPath = files[0].webkitRelativePath || "";
-    const top = firstPath.split("/")[0]; // Weak13
-    if(!/^Weak\d{1,2}$/i.test(top)){
-      throw new Error("لازم تختار مجلد اسمه Weakxx مثل Weak13");
+  function toPathSegments(rawPath){
+    const safe = (rawPath || "")
+      .replace(/\\/g, "/")
+      .replace(/^content:\/\//i, "")
+      .replace(/^file:\/\//i, "")
+      .trim();
+    return safe.split("/").filter(Boolean);
+  }
+
+  function detectWeekRootOffset(paths){
+    const counts = new Map();
+    for(const path of paths){
+      const parts = toPathSegments(path);
+      const idx = parts.findIndex(x => /^G[1-9]$/i.test(x));
+      if(idx >= 0) counts.set(idx, (counts.get(idx) || 0) + 1);
     }
 
-    // رفع كل الملفات مع نفس المسار
-    for(let i=0;i<files.length;i++){
-      const f = files[i];
-      const rel = f.webkitRelativePath; // Weak13/G9/...
-      if(!rel) continue;
-      if(rel.endsWith("/")) continue;
+    let bestIdx = -1;
+    let bestCount = 0;
+    for(const [idx, cnt] of counts.entries()){
+      if(cnt > bestCount){ bestCount = cnt; bestIdx = idx; }
+    }
+    return bestIdx;
+  }
 
-      const targetRel = isSecondTerm() ? `${SECOND_TERM_ROOT}/${rel}` : rel;
+  function getPortableRelativePath(rawPath, rootOffset){
+    const parts = toPathSegments(rawPath);
+    if(parts.length < 2) return null;
 
-      setStatus(`(${i+1}/${files.length}) رفع: ${targetRel}`);
+    if(rootOffset >= 0 && rootOffset < parts.length - 1){
+      return parts.slice(rootOffset).join("/");
+    }
+
+    const gradeIdx = parts.findIndex(x => /^G[1-9]$/i.test(x));
+    if(gradeIdx >= 0 && gradeIdx < parts.length - 1) return parts.slice(gradeIdx).join("/");
+    if(parts.length >= 3) return parts.slice(1).join("/");
+    return null;
+  }
+
+  async function extractZipEntries(zipFile){
+    if(!window.JSZip) throw new Error("تعذر تحميل مكتبة ZIP.");
+
+    const zip = await window.JSZip.loadAsync(await zipFile.arrayBuffer());
+    const out = [];
+    for(const name of Object.keys(zip.files)){
+      const item = zip.files[name];
+      if(item.dir) continue;
+      const blob = await item.async("blob");
+      out.push({ path: name, file: new File([blob], name.split("/").pop() || "file.bin", { type: blob.type || "application/octet-stream" }) });
+    }
+    return out;
+  }
+
+  async function extractRarEntries(rarFile){
+    if(!window.unrar || !window.unrar.createExtractorFromData){
+      throw new Error("تعذر تحميل مكتبة RAR.");
+    }
+
+    const data = new Uint8Array(await rarFile.arrayBuffer());
+    const extractor = await window.unrar.createExtractorFromData({ data });
+    const list = extractor.getFileList();
+    const fileNames = (list.fileHeaders || []).filter(h => !h.flags?.directory).map(h => h.name);
+    const extracted = extractor.extract({ files: fileNames });
+
+    const out = [];
+    for(const item of (extracted.files || [])){
+      if(!item.extraction) continue;
+      const blob = new Blob([item.extraction], { type:"application/octet-stream" });
+      out.push({ path: item.fileHeader.name, file: new File([blob], item.fileHeader.name.split("/").pop() || "file.bin", { type:"application/octet-stream" }) });
+    }
+    return out;
+  }
+
+  async function collectWeekUploadEntries(folderFiles, archiveFile){
+    if(folderFiles.length) return folderFiles.map(f => ({ path: f.webkitRelativePath || f.name, file: f }));
+    if(!archiveFile) return [];
+
+    const low = (archiveFile.name || "").toLowerCase();
+    if(low.endsWith(".zip")) return await extractZipEntries(archiveFile);
+    if(low.endsWith(".rar")) return await extractRarEntries(archiveFile);
+    throw new Error("صيغة الملف غير مدعومة. استخدم ZIP أو RAR.");
+  }
+
+  async function uploadWeekFolderAll(entries, targetWeekId){
+    if(!entries.length) throw new Error("اختار مجلد الأسبوع أو ملف ZIP/RAR.");
+    if(!/^Weak\d{2}$/i.test(targetWeekId || "")){
+      throw new Error("اختَر رقم الأسبوع أولاً.");
+    }
+
+    const allPaths = entries.map(x => x.path || "");
+    const rootOffset = detectWeekRootOffset(allPaths);
+    if(rootOffset < 0) throw new Error("تعذر العثور على مجلدات G1..G9 داخل الملفات المرفوعة.");
+
+    const firstPath = entries[0].path || entries[0].file?.name || "";
+    const sourceTop = (firstPath || "").replace(/\\/g, "/").split("/")[0] || "";
+
+    let uploaded = 0;
+    const seenGrades = new Set();
+
+    for(let i=0;i<entries.length;i++){
+      const f = entries[i].file;
+      const innerPath = getPortableRelativePath(entries[i].path, rootOffset);
+      if(!innerPath) continue;
+
+      const grade = innerPath.split("/")[0] || "";
+      if(/^G[1-9]$/i.test(grade)) seenGrades.add(grade.toUpperCase());
+
+      const normalizedRel = `${targetWeekId}/${innerPath}`;
+      const targetRel = isSecondTerm() ? `${SECOND_TERM_ROOT}/${normalizedRel}` : normalizedRel;
+
+      setStatus(`(${i+1}/${entries.length}) رفع: ${targetRel}`);
       await uploadReplace(targetRel, f);
+      uploaded++;
     }
 
-    return top;
+    if(uploaded === 0){
+      throw new Error("لم يتم العثور على ملفات صالحة للرفع. تأكد أنك اخترت مجلد/أرشيف أسبوع يحتوي G1..G9.");
+    }
+
+    if(seenGrades.size < 9){
+      throw new Error("المجلد غير مكتمل: يجب أن يحتوي مسارات داخل G1 إلى G9.");
+    }
+
+    return { targetWeekId, sourceTop, uploaded };
   }
 
   // ========= أحداث الواجهة =========
@@ -733,6 +859,9 @@ const SAS_AND_ADMIN = SAS_Q_ADMIN.replace("?", "&");
     const v = weekSel.value;
 
     if(v === "__UPLOAD_WEEK__"){
+      fillUploadWeekNumbers();
+      uploadWeekNumber.value = "";
+    weekArchive.value = "";
       uploadWeekCard.classList.remove("hide");
       gradeSel.disabled = true;
       subjSel.disabled = true;
@@ -795,17 +924,22 @@ const SAS_AND_ADMIN = SAS_Q_ADMIN.replace("?", "&");
   // رفع أسبوع كامل
   btnUploadWeekFolder.addEventListener("click", async ()=>{
     const files = weekFolder.files ? [...weekFolder.files] : [];
+    const archive = weekArchive.files && weekArchive.files[0] ? weekArchive.files[0] : null;
     setStatus("");
     uploadWeekMeta.textContent = "";
 
     try{
-      if(!files.length) { alert("اختار مجلد الأسبوع."); return; }
-      setStatus(`جاري رفع ${files.length} ملف...`);
-      const weekId = await uploadWeekFolderAll(files);
+      const targetWeekId = uploadWeekNumber.value;
+      if(!targetWeekId){ alert("اختَر رقم الأسبوع أولاً."); return; }
+      const entries = await collectWeekUploadEntries(files, archive);
+      if(!entries.length) { alert("اختار مجلد الأسبوع أو ملف ZIP/RAR."); return; }
+      setStatus(`جاري تجهيز ${entries.length} ملف...`);
+      const { targetWeekId: weekId, sourceTop, uploaded } = await uploadWeekFolderAll(entries, targetWeekId);
       setStatus("تم رفع الأسبوع ✅");
-      uploadWeekMeta.textContent = `تم رفع: ${weekId}`;
+      uploadWeekMeta.textContent = `تم رفع ${uploaded} ملف من ${sourceTop || "المجلد المحدد"} داخل ${weekId}`;
 
       weekFolder.value = "";
+      weekArchive.value = "";
 
       // إعادة تحميل الأسابيع
       const weeks = await loadWeeksFromStorage();
@@ -824,6 +958,7 @@ const SAS_AND_ADMIN = SAS_Q_ADMIN.replace("?", "&");
 
   btnCancelUploadWeek.addEventListener("click", ()=>{
     uploadWeekCard.classList.add("hide");
+    uploadWeekNumber.value = "";
     weekSel.value = "";
     setStatus("");
     updateAddPreview();
